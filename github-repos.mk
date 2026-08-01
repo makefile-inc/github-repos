@@ -1,0 +1,274 @@
+# Copyright 2026
+# license that can be found in the LICENSE file.
+
+_REPOS_ROOT_DIR_WITH_SLASH := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
+_REPOS_ROOT_DIR := $(_REPOS_ROOT_DIR_WITH_SLASH:/=)
+
+include $(_REPOS_ROOT_DIR)/makefile-git-crypt/include.mk.full.inc
+
+BINS_PLATFORM_ARCH = $(OS_CALCULATED)_$(ARCH_CALCULATED)
+STORED_BINS_ARCHIVE = $(_REPOS_ROOT_DIR)/.mirror/bins_$(BINS_PLATFORM_ARCH).tar.xz
+STORED_BINS_SUM = $(_REPOS_ROOT_DIR)/.mirror/bins_$(BINS_PLATFORM_ARCH).sha256sum
+ORGANIZATIONS_DIR = $(CURDIR)/organizations
+TEMPLATE_DIR = $(_REPOS_ROOT_DIR)/.template
+
+define _CHECK_BINARIES_INCLUDES
+${_GIT_CRYPT_OP_INCLUDES} \
+function check_required_binaries() {\
+	local bin_dir="$(BINARIES_PATH)"; \
+	local platform="$(BINS_PLATFORM_ARCH)"; \
+	if [ ! -d "$$bin_dir" ]; then \
+		exit_with_err "'$$bin_dir' dir not found"; \
+	fi; \
+	local required_bins=("git-crypt" "tofu" "$${platform}/terraform-provider-github"); \
+	toggle_globs "on"; \
+	for fl in $$bin_dir/**; do \
+		if [ -d "$$fl" ]; then \
+			continue; \
+		fi; \
+		local new_required=(); \
+		for r_bin in "$${required_bins[@]}"; do \
+			if [[ "$$fl" =~ "$$r_bin" ]]; then \
+				continue; \
+			fi; \
+			new_required+=("$$r_bin"); \
+		done; \
+		required_bins=(); \
+		for n_bin in "$${new_required[@]}"; do \
+			required_bins+=("$$n_bin"); \
+		done; \
+	done; \
+	toggle_globs; \
+	if [ "$${#required_bins[@]}" -eq 0 ]; then \
+		return 0; \
+	fi; \
+	echo_warn "Not found next required binaries: $${required_bins[*]}"; \
+	return 1; \
+};
+endef
+
+define _SYNC_ORGS_INCLUDES
+${INCLUDE_ECHO} \
+function sync_org_with_templates() { \
+	local org_dir="$$1"; \
+	if [ -z "$$org_dir" ]; then \
+		exit_with_err "Org dir not passed!"; \
+	fi; \
+	local org_name=""; \
+	if ! org_name="$$(basename "$$org_dir")"; then \
+		exit_with_err "Cannot extract org name from dir '$$org_dir'"; \
+	fi; \
+	if [ -z "$$org_name" ]; then \
+		exit_with_err "Org name is empty for dir '$$org_dir'!"; \
+	fi; \
+	local -A sync_force=(); \
+	sync_force["main.tf"]="true"; \
+	if ! pushd . > /dev/null; then \
+		exit_with_err "Cannot pushd current dir"; \
+	fi; \
+	if ! cd "$(TEMPLATE_DIR)"; then \
+		exit_with_err "Cannot cd to template dir '$(TEMPLATE_DIR)'"; \
+	fi; \
+	local need_commit=""; \
+	for tf_file in *.tf; do \
+		local template_file=""; \
+		if ! template_file="$$(realpath "$$tf_file")"; then \
+			exit_with_err "Cannot get real path for '$$tf_file'"; \
+		fi; \
+		local base_template_name=""; \
+		if ! base_template_name="$$(basename "$$template_file")"; then \
+			exit_with_err "Cannot get base name for '$$$template_file'"; \
+		fi; \
+		local full_file_path="$${org_dir}/$${tf_file}"; \
+		if [ -f "$$full_file_path" ]; then \
+			if [[ ! -v sync_force["$$base_template_name"] ]]; then \
+    			echo_info "File '$$tf_file' for org '$$org_name' already exists. Skip"; \
+				continue; \
+			else \
+				echo_warn "File '$$tf_file' for org '$$org_name' exists but will sync"; \
+  			fi; \
+		fi; \
+		echo_info "Prepare and save '$$template_file' to '$$full_file_path' for org '$$org_name'"; \
+		if ! sed "s/%%OWNER_NAME%%/$$org_name/g" "$$template_file" > "$$full_file_path"; then \
+			exit_with_err "Save '$$full_file_path' and replace '%%OWNER_NAME%%' to '$$org_name' in file '$$template_file'"; \
+		fi; \
+		need_commit="true"; \
+	done; \
+	if ! popd > /dev/null; then \
+		exit_with_err "Cannot pushd current dir"; \
+	fi; \
+	if [ -z "$$need_commit" ]; then \
+		return 0; \
+	fi; \
+	return 1; \
+};
+endef
+
+##@ Github repos. Mirror binaries
+
+bins/check/archive/deps: check/installed/tar check/installed/find check/installed/sha256sum
+
+bins/check/required: check/installed/find
+	@${_CHECK_BINARIES_INCLUDES} \
+	if ! check_required_binaries; then \
+		exit_with_err "Not all required binaries installed"; \
+	fi; \
+
+bins/archive: bins/check/archive/deps bins/check/required ## Archive current binaries to git and commit
+	@${INCLUDE_ECHO} \
+	bin_dir="$(BINARIES_PATH)"; \
+	tmp_archive="$(STORED_BINS_ARCHIVE).tmp"; \
+	dest_archive="$(STORED_BINS_ARCHIVE)"; \
+	tmp_sums_file="$(STORED_BINS_SUM).tmp"; \
+	sums_file="$(STORED_BINS_SUM)"; \
+	pushd .; \
+	if ! cd "$$bin_dir"; then \
+		exit_with_err "Cannot cd to '$$bin_dir'"; \
+	fi; \
+	if ! $(FIND_BIN) . -type f -exec sha256sum -b {} + > "$$tmp_sums_file"; then \
+		exit_with_err "Cannot calculate binaries sha256 sum and write to temp file '$$tmp_sums_file'"; \
+	fi; \
+	popd; \
+	$(FIND_BIN) "$$bin_dir" \( -type f -o -type d \) -printf "%P\n" | $(TAR_BIN) -cJvf "$$tmp_archive" --no-recursion -C "$$bin_dir" -T -; \
+	tar_statuses=("$${PIPESTATUS[@]}"); \
+	if [[ "$${tar_statuses[0]}" != "0" || "$${tar_statuses[1]}" != "0" ]]; then \
+		exit_with_err "Cannot archive '$$bin_dir' to '$$tmp_archive'"; \
+	fi; \
+	echo_info "Replace old '$$dest_archive' on new '$$tmp_archive'"; \
+	if ! rm -f "$$sums_file"; then \
+		exit_with_err "Cannot remove old sum file '$$sums_file'"; \
+	fi; \
+	if ! mv "$$tmp_sums_file" "$$sums_file"; then \
+		exit_with_err "Cannot rename temp sum file '$$tmp_sums_file' to dest '$$sums_file'"; \
+	fi; \
+	if ! rm -f "$$dest_archive"; then \
+		exit_with_err "Cannot remove old archive '$$dest_archive'"; \
+	fi; \
+	if ! mv "$$tmp_archive" "$$dest_archive"; then \
+		exit_with_err "Cannot rename temp archive '$$tmp_archive' to dest '$$dest_archive'"; \
+	fi; \
+	if ! git add "$$dest_archive" "$$sums_file"; then \
+		exit_with_err "Cannot add archive '$$dest_archive' to git"; \
+	fi; \
+	if ! git commit -m "Upgrade binaries archive"; then \
+		exit_with_err "Cannot commit archive '$$dest_archive' to git"; \
+	fi; \
+
+bins/install: bin bins/check/archive/deps ## Install binaries from $(_REPOS_DIR)/.mirror
+	@${_CHECK_BINARIES_INCLUDES} \
+	if check_required_binaries; then \
+		exit 0; \
+	fi; \
+	archive_to_extract="$(STORED_BINS_ARCHIVE)"; \
+	sum_file="$(STORED_BINS_SUM)"; \
+	if [ ! -f "$$sum_file" ]; then \
+		exit_with_err "Sums file '$$sum_file' not found"; \
+	fi; \
+	if [ ! -f "$$archive_to_extract" ]; then \
+		exit_with_err "Archive to install '$$archive_to_extract' not found"; \
+	fi; \
+	if ! $(TAR_BIN) -xvf "$$archive_to_extract" -C "$(BINARIES_PATH)"; then \
+		exit_with_err "Cannot extract '$$archive_to_extract' to '$(BINARIES_PATH)'"; \
+	fi; \
+	pushd . > /dev/null; \
+	if ! cd "$(BINARIES_PATH)"; then \
+		exit_with_err "Cannot cd to '$$bin_dir'"; \
+	fi; \
+	if ! sha256sum -c "$$sum_file"; then \
+		exit_with_err "Fail to check binaries sha256 sum"; \
+	fi; \
+	popd;
+
+_bins/clean:
+	@rm -rfv "$(BINARIES_PATH)"
+
+bins/upgrade: _bins/clean bins/install ## Install binaries from $(_REPOS_DIR)/.mirror
+
+##@ Github repos. Repo
+
+repo/new/init: bins/install bins/check/required ## Init new repository after create with git-crypt
+	@##~ KEY_PATH=PATH - path to save key. Should be outside the repo (current dir)
+	$(MAKE) git-crypt/repo/symmetric/init
+	$(MAKE) make git-crypt/add/file FILE=*.secrets.tf
+	$(MAKE) make git-crypt/add/file FILE=.tofu.tfstate
+	$(MAKE) make git-crypt/add/file FILE=.tofu.tfstate.backup
+
+repo/unlock: bins/install bins/check/required ## Unlock repository after clone
+	$(MAKE) git-crypt/repo/symmetric/unlock
+
+##@ Github repos. Organizations
+
+organizations:
+	@mkdir -p "$(ORGANIZATIONS_DIR)"
+
+github/check/deps: bins/check/required git-crypt/repo/symmetric/check/unlocked organizations
+
+github/organizations/add: github/check/deps ## Prepare new organization (owner) opentofu dir from template
+	@##~ ORG_NAME=NAME - New organization (owner) name
+	@${_SYNC_ORGS_INCLUDES} \
+	if [ -z "$$ORG_NAME" ]; then \
+		exit_with_err "Org name not passed with 'ORG_NAME' param (env)"; \
+	fi; \
+	org_dir="$(ORGANIZATIONS_DIR)/$$ORG_NAME"; \
+	if ! mkdir -p "$$org_dir"; then \
+		exit_with_err "Cannot create owner dir '$$org_dir'"; \
+	fi; \
+	if sync_org_with_templates "$$org_dir"; then \
+		echo_info "Org '$$ORG_NAME' prepared. Nothing to commit"; \
+		exit 0; \
+	fi; \
+	if git add "$$org_dir"; then \
+		if ! git commit -m "Add/prepare org '$$ORG_NAME'"; then \
+			echo_warn "Cannot commit new org '$$ORG_NAME' to git"; \
+		fi; \
+	fi; \
+	echo_info "Org '$$ORG_NAME' prepared and commit to git!"; \
+	exit 0; \
+
+github/organizations/sync: github/check/deps ## Sync current organizations (owners) with opentofu dir template
+	@${_SYNC_ORGS_INCLUDES} \
+	orgs_dirs=(); \
+	while IFS= read -r -d '' org_dir; do \
+		echo_info "Found org dir '$$org_dir'"; \
+		orgs_dirs+=("$$org_dir"); \
+	done < <($(FIND_BIN) "$(ORGANIZATIONS_DIR)" -maxdepth 1 -mindepth 1 -type d -print0); \
+	if [ "$${#orgs_dirs[@]}" -eq 0 ]; then \
+		echo_warn "Nothing to sync"; \
+		exit 0; \
+	fi; \
+	need_commit=""; \
+	for org_dir_sync in "$${orgs_dirs[@]}"; do \
+		sync_org_with_templates "$$org_dir_sync"; \
+		if git add "$$org_dir_sync"; then \
+			need_commit="true"; \
+		fi; \
+	done; \
+	if [ -n "$$need_commit" ]; then \
+		if ! git commit -m "Sync organization with templates"; then \
+			echo_warn "Cannot commit synced organizations to git"; \
+		fi; \
+	fi; \
+	echo_info "Organizations synced with templates!"; \
+	exit 0
+
+##@ Github repos. Sync
+
+sync: export WORKING_DIR = $(CURDIR)
+sync: github/check/deps ## sync repos with github
+	@##~ TOKENS_FILE=PATH  - Path to github tokens file. See $(CURDIR)/sync.sh -h for more info
+	@##~                    By default, use $(CURDIR)/.tokens.env
+	@##~ ORG_TO_SYNC=NAME  - if passed will sync only passed organization
+	@##~ REPO_TO_SYNC=NAME - if passed will sync only passed repo in organization ORG_TO_SYNC
+	@##~                     ORG_TO_SYNC should be passed with REPO_TO_SYNC
+	@##~ SYNC_ONLY=ORG[/REPO] - if passed will sync only passed repo in organization
+	@##~                        or will sync all repos passed in organization
+	@##~ SHOW_SENSITIVE=true  - if passed tofu plan will output sensitives.
+	@##~                        Useful for import exists repositories 
+	@if [ -z "$$TOKENS_FILE" ]; then \
+		export TOKENS_FILE="$(CURDIR)/.tokens.env"; \
+	fi; \
+	if ! $(_REPOS_ROOT_DIR)/sync.sh; then \
+		exit 1; \
+	fi; \
+
+.PHONY: bins/archive bins/install bins/check/archive/deps bins/check/required repo/unlock sync github/organizations/add repo/new/init github/organizations/sync
