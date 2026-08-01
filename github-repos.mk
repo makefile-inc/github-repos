@@ -6,17 +6,17 @@ _REPOS_ROOT_DIR := $(_REPOS_ROOT_DIR_WITH_SLASH:/=)
 
 include $(_REPOS_ROOT_DIR)/makefile-git-crypt/include.mk.full.inc
 
-BINS_PLATFORM_ARCH = $(OS_CALCULATED)_$(ARCH_CALCULATED)
-STORED_BINS_ARCHIVE = $(_REPOS_ROOT_DIR)/.mirror/bins_$(BINS_PLATFORM_ARCH).tar.xz
-STORED_BINS_SUM = $(_REPOS_ROOT_DIR)/.mirror/bins_$(BINS_PLATFORM_ARCH).sha256sum
-ORGANIZATIONS_DIR = $(CURDIR)/organizations
-TEMPLATE_DIR = $(_REPOS_ROOT_DIR)/.template
+_GH_BINS_PLATFORM_ARCH = $(OS_CALCULATED)_$(ARCH_CALCULATED)
+_GH_STORED_BINS_ARCHIVE = $(_REPOS_ROOT_DIR)/.mirror/bins_$(_GH_BINS_PLATFORM_ARCH).tar.xz
+_GH_STORED_BINS_SUM = $(_REPOS_ROOT_DIR)/.mirror/bins_$(_GH_BINS_PLATFORM_ARCH).sha256sum
+_GH_ORGANIZATIONS_DIR = $(CURDIR)/organizations
+_GH_TEMPLATE_DIR = $(_REPOS_ROOT_DIR)/.template
 
-define _CHECK_BINARIES_INCLUDES
+define _GH_CHECK_BINARIES_INCLUDES
 ${_GIT_CRYPT_OP_INCLUDES} \
 function check_required_binaries() {\
 	local bin_dir="$(BINARIES_PATH)"; \
-	local platform="$(BINS_PLATFORM_ARCH)"; \
+	local platform="$(_GH_BINS_PLATFORM_ARCH)"; \
 	if [ ! -d "$$bin_dir" ]; then \
 		exit_with_err "'$$bin_dir' dir not found"; \
 	fi; \
@@ -47,7 +47,7 @@ function check_required_binaries() {\
 };
 endef
 
-define _SYNC_ORGS_INCLUDES
+define _GH_SYNC_ORGS_INCLUDES
 ${INCLUDE_ECHO} \
 function sync_org_with_templates() { \
 	local org_dir="$$1"; \
@@ -66,8 +66,8 @@ function sync_org_with_templates() { \
 	if ! pushd . > /dev/null; then \
 		exit_with_err "Cannot pushd current dir"; \
 	fi; \
-	if ! cd "$(TEMPLATE_DIR)"; then \
-		exit_with_err "Cannot cd to template dir '$(TEMPLATE_DIR)'"; \
+	if ! cd "$(_GH_TEMPLATE_DIR)"; then \
+		exit_with_err "Cannot cd to template dir '$(_GH_TEMPLATE_DIR)'"; \
 	fi; \
 	local need_commit=""; \
 	for tf_file in *.tf; do \
@@ -106,21 +106,21 @@ endef
 
 ##@ Github repos. Mirror binaries
 
-bins/check/archive/deps: check/installed/tar check/installed/find check/installed/sha256sum
+gh/bins/check/archive/deps: check/installed/tar check/installed/find check/installed/sha256sum
 
-bins/check/required: check/installed/find
-	@${_CHECK_BINARIES_INCLUDES} \
+gh/bins/check/required: check/installed/find
+	@${_GH_CHECK_BINARIES_INCLUDES} \
 	if ! check_required_binaries; then \
 		exit_with_err "Not all required binaries installed"; \
 	fi; \
 
-bins/archive: bins/check/archive/deps bins/check/required ## Archive current binaries to git and commit
+gh/bins/archive: gh/bins/check/archive/deps gh/bins/check/required
 	@${INCLUDE_ECHO} \
 	bin_dir="$(BINARIES_PATH)"; \
-	tmp_archive="$(STORED_BINS_ARCHIVE).tmp"; \
-	dest_archive="$(STORED_BINS_ARCHIVE)"; \
-	tmp_sums_file="$(STORED_BINS_SUM).tmp"; \
-	sums_file="$(STORED_BINS_SUM)"; \
+	tmp_archive="$(_GH_STORED_BINS_ARCHIVE).tmp"; \
+	dest_archive="$(_GH_STORED_BINS_ARCHIVE)"; \
+	tmp_sums_file="$(_GH_STORED_BINS_SUM).tmp"; \
+	sums_file="$(_GH_STORED_BINS_SUM)"; \
 	pushd .; \
 	if ! cd "$$bin_dir"; then \
 		exit_with_err "Cannot cd to '$$bin_dir'"; \
@@ -154,13 +154,13 @@ bins/archive: bins/check/archive/deps bins/check/required ## Archive current bin
 		exit_with_err "Cannot commit archive '$$dest_archive' to git"; \
 	fi; \
 
-bins/install: bin bins/check/archive/deps ## Install binaries from $(_REPOS_DIR)/.mirror
-	@${_CHECK_BINARIES_INCLUDES} \
+gh/bins/install: bin gh/bins/check/archive/deps ## Install binaries from $(_REPOS_DIR)/.mirror
+	@${_GH_CHECK_BINARIES_INCLUDES} \
 	if check_required_binaries; then \
 		exit 0; \
 	fi; \
-	archive_to_extract="$(STORED_BINS_ARCHIVE)"; \
-	sum_file="$(STORED_BINS_SUM)"; \
+	archive_to_extract="$(_GH_STORED_BINS_ARCHIVE)"; \
+	sum_file="$(_GH_STORED_BINS_SUM)"; \
 	if [ ! -f "$$sum_file" ]; then \
 		exit_with_err "Sums file '$$sum_file' not found"; \
 	fi; \
@@ -179,59 +179,27 @@ bins/install: bin bins/check/archive/deps ## Install binaries from $(_REPOS_DIR)
 	fi; \
 	popd;
 
-_bins/clean:
+gh/_bins/clean:
 	@rm -rfv "$(BINARIES_PATH)"
 
-bins/upgrade: _bins/clean bins/install ## Install binaries from $(_REPOS_DIR)/.mirror
+gh/bins/upgrade: gh/_bins/clean gh/bins/install ## Install binaries from $(_REPOS_DIR)/.mirror
 
-##@ Github repos. Repo
+##@ Github repos. Repo itself
 
-repo/new/init: bins/install bins/check/required ## Init new repository after create with git-crypt
+gh/repo/new/init: gh/bins/install gh/bins/check/required ## Init new repository after create with git-crypt
 	@##~ KEY_PATH=PATH - path to save key. Should be outside the repo (current dir)
 	$(MAKE) git-crypt/repo/symmetric/init
 	$(MAKE) make git-crypt/add/file FILE=*.secrets.tf
 	$(MAKE) make git-crypt/add/file FILE=.tofu.tfstate
 	$(MAKE) make git-crypt/add/file FILE=.tofu.tfstate.backup
 
-repo/unlock: bins/install bins/check/required ## Unlock repository after clone
-	$(MAKE) git-crypt/repo/symmetric/unlock
-
-##@ Github repos. Organizations
-
-organizations:
-	@mkdir -p "$(ORGANIZATIONS_DIR)"
-
-github/check/deps: bins/check/required git-crypt/repo/symmetric/check/unlocked organizations
-
-github/organizations/add: github/check/deps ## Prepare new organization (owner) opentofu dir from template
-	@##~ ORG_NAME=NAME - New organization (owner) name
-	@${_SYNC_ORGS_INCLUDES} \
-	if [ -z "$$ORG_NAME" ]; then \
-		exit_with_err "Org name not passed with 'ORG_NAME' param (env)"; \
-	fi; \
-	org_dir="$(ORGANIZATIONS_DIR)/$$ORG_NAME"; \
-	if ! mkdir -p "$$org_dir"; then \
-		exit_with_err "Cannot create owner dir '$$org_dir'"; \
-	fi; \
-	if sync_org_with_templates "$$org_dir"; then \
-		echo_info "Org '$$ORG_NAME' prepared. Nothing to commit"; \
-		exit 0; \
-	fi; \
-	if git add "$$org_dir"; then \
-		if ! git commit -m "Add/prepare org '$$ORG_NAME'"; then \
-			echo_warn "Cannot commit new org '$$ORG_NAME' to git"; \
-		fi; \
-	fi; \
-	echo_info "Org '$$ORG_NAME' prepared and commit to git!"; \
-	exit 0; \
-
-github/organizations/sync: github/check/deps ## Sync current organizations (owners) with opentofu dir template
-	@${_SYNC_ORGS_INCLUDES} \
+gh/repo/organizations/sync: gh/check/deps ## Sync current organizations (owners) with opentofu dir template
+	@${_GH_SYNC_ORGS_INCLUDES} \
 	orgs_dirs=(); \
 	while IFS= read -r -d '' org_dir; do \
 		echo_info "Found org dir '$$org_dir'"; \
 		orgs_dirs+=("$$org_dir"); \
-	done < <($(FIND_BIN) "$(ORGANIZATIONS_DIR)" -maxdepth 1 -mindepth 1 -type d -print0); \
+	done < <($(FIND_BIN) "$(_GH_ORGANIZATIONS_DIR)" -maxdepth 1 -mindepth 1 -type d -print0); \
 	if [ "$${#orgs_dirs[@]}" -eq 0 ]; then \
 		echo_warn "Nothing to sync"; \
 		exit 0; \
@@ -251,10 +219,48 @@ github/organizations/sync: github/check/deps ## Sync current organizations (owne
 	echo_info "Organizations synced with templates!"; \
 	exit 0
 
+gh/repo/upgrade: gh/bins/install gh/bins/check/required gh/bins/upgrade gh/repo/organizations/sync ## Upgrade deps and sync organizations template
+
+gh/repo/unlock: gh/bins/install gh/bins/check/required ## Unlock infra repository after clone
+	@##~ KEY_PATH=PATH - path to key file to unlock
+	@$(MAKE) git-crypt/repo/symmetric/unlock
+
+gh/repo/lock: gh/bins/install gh/bins/check/required ## Lock infra repository
+	@$(MAKE) git-crypt/repo/lock
+
+##@ Github repos. Infra. Organizations
+
+organizations:
+	@mkdir -p "$(_GH_ORGANIZATIONS_DIR)"
+
+gh/check/deps: gh/bins/check/required git-crypt/repo/symmetric/check/unlocked organizations
+
+gh/infra/organizations/add: gh/check/deps ## Prepare new organization (owner) opentofu dir from template
+	@##~ ORG_NAME=NAME - New organization (owner) name
+	@${_GH_SYNC_ORGS_INCLUDES} \
+	if [ -z "$$ORG_NAME" ]; then \
+		exit_with_err "Org name not passed with 'ORG_NAME' param (env)"; \
+	fi; \
+	org_dir="$(_GH_ORGANIZATIONS_DIR)/$$ORG_NAME"; \
+	if ! mkdir -p "$$org_dir"; then \
+		exit_with_err "Cannot create owner dir '$$org_dir'"; \
+	fi; \
+	if sync_org_with_templates "$$org_dir"; then \
+		echo_info "Org '$$ORG_NAME' prepared. Nothing to commit"; \
+		exit 0; \
+	fi; \
+	if git add "$$org_dir"; then \
+		if ! git commit -m "Add/prepare org '$$ORG_NAME'"; then \
+			echo_warn "Cannot commit new org '$$ORG_NAME' to git"; \
+		fi; \
+	fi; \
+	echo_info "Org '$$ORG_NAME' prepared and commit to git!"; \
+	exit 0; \
+
 ##@ Github repos. Sync
 
-sync: export WORKING_DIR = $(CURDIR)
-sync: github/check/deps ## sync repos with github
+gh/infra/sync: export WORKING_DIR = $(CURDIR)
+gh/infra/sync: gh/check/deps ## sync repos with github
 	@##~ TOKENS_FILE=PATH  - Path to github tokens file. See $(CURDIR)/sync.sh -h for more info
 	@##~                    By default, use $(CURDIR)/.tokens.env
 	@##~ ORG_TO_SYNC=NAME  - if passed will sync only passed organization
@@ -271,4 +277,4 @@ sync: github/check/deps ## sync repos with github
 		exit 1; \
 	fi; \
 
-.PHONY: bins/archive bins/install bins/check/archive/deps bins/check/required repo/unlock sync github/organizations/add repo/new/init github/organizations/sync
+.PHONY: gh/bins/archive gh/bins/install gh/bins/upgrade gh/bins/check/archive/deps gh/check/deps gh/bins/check/required gh/repo/unlock gh/infra/sync gh/infra/organizations/add gh/repo/new/init gh/repo/organizations/sync
