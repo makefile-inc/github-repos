@@ -187,7 +187,7 @@ gh/bins/upgrade: gh/_bins/clean gh/bins/install ## Install binaries from $(_REPO
 ##@ Github repos. Repo itself
 
 gh/repo/new/init: gh/bins/install gh/bins/check/required ## Init new repository after create with git-crypt
-	@##~ KEY_PATH=PATH - path to save key. Should be outside the repo (current dir)
+	@##~ KEY_PATH=PATH - path to save git-crypt key. Should be outside the repo (current dir)
 	$(MAKE) git-crypt/repo/symmetric/init
 	$(MAKE) make git-crypt/add/file FILE=*.secrets.tf
 	$(MAKE) make git-crypt/add/file FILE=.tofu.tfstate
@@ -219,13 +219,17 @@ gh/repo/organizations/sync: gh/check/deps ## Sync current organizations (owners)
 	echo_info "Organizations synced with templates!"; \
 	exit 0
 
-gh/repo/upgrade: gh/bins/install gh/bins/check/required gh/bins/upgrade gh/repo/organizations/sync ## Upgrade deps and sync organizations template
+gh/repo/upgrade: gh/bins/install gh/bins/check/required gh/bins/upgrade gh/repo/organizations/sync ## Upgrade deps and sync organizations template and upgrade .gitignore github-repos module
+	@${INCLUDE_ECHO} \
+	if ! cp "$(_REPOS_ROOT_DIR)/.gitignore" "$(CURDIR)/.gitignore"; then \
+		exit_with_err "Cannot copy .gitignore from makefile-inc/github-repos '$(_REPOS_ROOT_DIR)/.gitignore' to cur infra '$(CURDIR)/.gitignore'"; \
+	fi
 
-gh/repo/unlock: gh/bins/install gh/bins/check/required ## Unlock infra repository after clone
+gh/repo/unlock: gh/bins/install gh/bins/check/required ## Unlock infra repository with git-crypt after clone
 	@##~ KEY_PATH=PATH - path to key file to unlock
 	@$(MAKE) git-crypt/repo/symmetric/unlock
 
-gh/repo/lock: gh/bins/install gh/bins/check/required ## Lock infra repository
+gh/repo/lock: gh/bins/install gh/bins/check/required ## Lock infra repository locally
 	@$(MAKE) git-crypt/repo/lock
 
 ##@ Github repos. Infra. Organizations
@@ -257,10 +261,10 @@ gh/infra/organizations/add: gh/check/deps ## Prepare new organization (owner) op
 	echo_info "Org '$$ORG_NAME' prepared and commit to git!"; \
 	exit 0; \
 
-##@ Github repos. Sync
+##@ Github repos. Infra. Sync
 
 gh/infra/sync: export WORKING_DIR = $(CURDIR)
-gh/infra/sync: gh/check/deps ## sync repos with github
+gh/infra/sync: gh/check/deps ## Sync repos with github
 	@##~ TOKENS_FILE=PATH  - Path to github tokens file. See $(CURDIR)/sync.sh -h for more info
 	@##~                    By default, use $(CURDIR)/.tokens.env
 	@##~ ORG_TO_SYNC=NAME  - if passed will sync only passed organization
