@@ -596,9 +596,9 @@ make gh/infra/sync ORG_TO_SYNC=organization-name REPO_TO_SYNC=repo-name
 - Copy binaries to `$(CURDIR)/bin`
 - Run:
 
-```bash
-make gh/bins/archive
-```
+  ```bash
+  make gh/bins/archive
+  ```
 - if you change version of `terraform-provider-github`, please change version in [main.tf](./.template/main.tf) template file
 - Commit.
 - Add warning about needs to run `make gh/repo/upgrade`
