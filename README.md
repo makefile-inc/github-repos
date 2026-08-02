@@ -91,6 +91,17 @@ to:
 - sync root tofu module [template dir](./.template)
 - update `.gitignore` from this repo to your repo.
 
+**WARNING!** If you install submodule not to directory `makefile-github-repos` or not with submodule, pass
+`GITHUB_REPOS_MODULE_DIR` params to upgrade target, for example module installed in `makefiles/github-repos` dir:
+
+```bash
+make gh/repo/upgrade GITHUB_REPOS_MODULE_DIR="makefiles/github-repos"
+```
+
+Sync root tofu module only force resync `main.tf` and add not present files.
+
+**But, before sync repos please check that another files not changed to prevent unnecessary destroy/change repositories!**
+
 ## Description
 
 ### Deps includes in repo
@@ -205,11 +216,19 @@ make gh/infra/organizations/add ORG_NAME=YOUR_ORGANIZATION_OR_GITHUB_USER
 
 `YOUR_ORGANIZATION_OR_GITHUB_USER` can be organization name or name of github user.
 
+**WARNING!** If you install submodule not to directory `makefile-github-repos` or not with submodule, pass
+`GITHUB_REPOS_MODULE_DIR` params to target, for example module installed in `makefiles/github-repos` dir:
+
+```bash
+make gh/infra/organizations/add ORG_NAME=YOUR_ORGANIZATION_OR_GITHUB_USER GITHUB_REPOS_MODULE_DIR="makefiles/github-repos"
+```
+
 Target:
 - creates `./organizations/ORG_NAME` directory
 - Copy all `*.tf` files form [template directory](./.template/) to `./organizations/ORG_NAME` directory
   replaces:
   - `%%OWNER_NAME%%` - to `$ORG_NAME` in all files
+  - `%%MODULE_DIR%%` - to `makefile-inc/github-repos` dir passed with `GITHUB_REPOS_MODULE_DIR` or automatically resolved with `/` ending
 - add dir to git and commit.
 
 ##### Add repos
@@ -568,9 +587,21 @@ It needs for prevent unnecessary destroy repo!
   Params:
   - `KEY_PATH`=*PATH* - path to save git-crypt key. Should be outside the repo (current dir)
 
-- `gh/repo/organizations/sync` - sync current organizations (owners) with opentofu dir template
+- `gh/repo/organizations/sync` - sync current organizations (owners) with opentofu dir template.
+   
+   Params:
+   - `GITHUB_REPOS_MODULE_DIR`=*PATH* - path to makefile-inc/github-repos dir inside repo.
+	    Optional. If not passed try to resolve in order:
+	   - `makefile-github-repos` dir directly
+	   - extract path from `$(CURDIR)/.gitmodules` by `makefile-inc/github-repos.git` substring
 
 - `gh/repo/upgrade` - upgrade deps and sync organizations template and upgrade `.gitignore` after upgrade `github-repos` module
+   
+   Params:
+   - `GITHUB_REPOS_MODULE_DIR`=*PATH* - path to makefile-inc/github-repos dir inside repo.
+	    Optional. If not passed try to resolve in order:
+	   - `makefile-github-repos` dir directly
+	   - extract path from `$(CURDIR)/.gitmodules` by `makefile-inc/github-repos.git` substring
 
 - `gh/repo/unlock` - unlock your repository with `git-crypt` after clone
 
@@ -582,6 +613,10 @@ It needs for prevent unnecessary destroy repo!
   
   Params:
   - `ORG_NAME`=*NAME* - new organization (owner) name
+  - `GITHUB_REPOS_MODULE_DIR`=*PATH* - path to makefile-inc/github-repos dir inside repo.
+	    Optional. If not passed try to resolve in order:
+	   - `makefile-github-repos` dir directly
+	   - extract path from `$(CURDIR)/.gitmodules` by `makefile-inc/github-repos.git` substring
 
 ### Sync
 
@@ -650,5 +685,6 @@ make gh/infra/sync ORG_TO_SYNC=organization-name REPO_TO_SYNC=repo-name
 ```bash
 make gh/bins/archive
 ```
-
-- Commit
+- if you change version of `terraform-provider-github`, please change version in [main.tf](./.template/main.tf) template file
+- Commit.
+- Add warning about needs to run `make gh/repo/upgrade`

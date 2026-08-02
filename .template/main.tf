@@ -16,7 +16,7 @@ provider "github" {
 }
 
 module "repos" {
-  source   = "../../modules/repo"
+  source   = "../../%%MODULE_DIR%%modules/repo"
   
   for_each = { 
     for name, r in local.repos : name => merge(

@@ -49,10 +49,64 @@ endef
 
 define _GH_SYNC_ORGS_INCLUDES
 ${INCLUDE_ECHO} \
+function try_extract_module_dir() { \
+	local passed_dir="$${1:-}"; \
+	local module_dir="modules/repo"; \
+	local main_f="main.tf"; \
+	local direct_path="makefile-github-repos"; \
+	if [ -n "$$passed_dir" ]; then \
+		direct_path="$${passed_dir%/}"; \
+		direct_path="$${passed_dir#$(CURDIR)/}"; \
+		if ! direct_path="$$(basename "")"; then \
+			echo_err "Cannot get basename form '$$passed_dir'"; \
+		fi; \
+	fi; \
+	if [ -f "$(CURDIR)/$${direct_path}/$${module_dir}/$${main_f}" ]; then \
+		echo -n "$$direct_path"; \
+		return 0; \
+	fi; \
+	if [ -n "$$passed_dir" ]; then \
+		echo_err "Passed makefile-inc/github-repos dir '$$passed_dir' not found or not contains repo terraform module"; \
+		return 1; \
+	fi; \
+	local modules_file="$(CURDIR)/.gitmodules"; \
+	if [ ! -f "$$modules_file" ]; then \
+		echo_err "Cannot extract makefile-inc/github-repos dir. '$$modules_file' file not found and not pass dir directly"; \
+		return 1; \
+	fi; \
+	local found_m=""; \
+	if ! found_m="$$(grep -B 1 -A 1 'makefile-inc/github-repos.git' "$$modules_file")"; then \
+		echo_err "Cannot extract makefile-inc/github-repos.git settings from '$$modules_file'"; \
+		return 1; \
+	fi; \
+	local regex="\\s+path\\s+=\\s+([[:graph:]]+)"; \
+	if [[ "$$found_m" =~ $regex ]]; then \
+		local path_from_m="$${BASH_REMATCH[1]}"; \
+		path_from_m="$${path_from_m%/}"; \
+		if [ -z "$$path_from_m" ]; then \
+			echo_err "Got empty path from '$$modules_file'"; \
+			return 1; \
+		fi; \
+		if [ -f "$(CURDIR)/$${path_from_m}/$${module_dir}/$${main_f}" ]; then \
+			echo -n "$$path_from_m"; \
+			return 0; \
+		fi; \
+		echo_err "Cannot extract makefile-inc/github-repos.git path from '$$modules_file'"; \
+		return 1; \
+	fi; \
+	echo_err "Cannot extract makefile-inc/github-repos.git path from '$$modules_file'"; \
+	return 1; \
+}; \
 function sync_org_with_templates() { \
 	local org_dir="$$1"; \
+	local module_dir="$${2:-}"; \
 	if [ -z "$$org_dir" ]; then \
 		exit_with_err "Org dir not passed!"; \
+	fi; \
+	if [ -n "$$module_dir" ]; then \
+		if [[ "$$module_dir" != */ ]]; then \
+			module_dir="$${module_dir}/"; \
+		fi; 
 	fi; \
 	local org_name=""; \
 	if ! org_name="$$(basename "$$org_dir")"; then \
@@ -89,9 +143,18 @@ function sync_org_with_templates() { \
   			fi; \
 		fi; \
 		echo_info "Prepare and save '$$template_file' to '$$full_file_path' for org '$$org_name'"; \
-		if ! sed "s/%%OWNER_NAME%%/$$org_name/g" "$$template_file" > "$$full_file_path"; then \
-			exit_with_err "Save '$$full_file_path' and replace '%%OWNER_NAME%%' to '$$org_name' in file '$$template_file'"; \
+		local -A replaces_map=(); \
+		replaces_map["%%OWNER_NAME%%"]="$$org_name"; \
+		replaces_map["%%MODULE_DIR%%"]="$$module_dir"; \
+		if ! cp "$$template_file" "$$full_file_path"; then \
+			exit_with_err "Cannot copy template file '$$template_file' to '$$full_file_path'"; \
 		fi; \
+		for tmp_str in "$${!replaces_map[@]}"; do \
+			local tmp_val="$${replaces_map[$$tmp_str]}"; \
+			if ! sed -i "s/$$tmp_str/$$tmp_val/g" "$$full_file_path"; then \
+				exit_with_err "Cannot replace replace '$$tmp_str' to '$$tmp_val' in file '$$full_file_path'"; \
+			fi; \
+		done; \
 		need_commit="true"; \
 	done; \
 	if ! popd > /dev/null; then \
@@ -194,6 +257,10 @@ gh/repo/new/init: gh/bins/install gh/bins/check/required ## Init new repository 
 	$(MAKE) make git-crypt/add/file FILE=.tofu.tfstate.backup
 
 gh/repo/organizations/sync: gh/check/deps ## Sync current organizations (owners) with opentofu dir template
+	@##~ GITHUB_REPOS_MODULE_DIR=PATH - path to makefile-inc/github-repos dir inside repo.
+	@##~                                Optional. If not passed try to resolve in order:
+	@##~                                - makefile-github-repos dir directly
+	@##~                                - extract path from $(CURDIR)/.gitmodules by makefile-inc/github-repos.git substring
 	@${_GH_SYNC_ORGS_INCLUDES} \
 	orgs_dirs=(); \
 	while IFS= read -r -d '' org_dir; do \
@@ -204,9 +271,13 @@ gh/repo/organizations/sync: gh/check/deps ## Sync current organizations (owners)
 		echo_warn "Nothing to sync"; \
 		exit 0; \
 	fi; \
+	module_dir=""; \
+	if ! module_dir="$$(try_extract_module_dir "$$GITHUB_REPOS_MODULE_DIR")"; then \
+		exit_with_err "Cannot resolve or incorrect makefile-inc/github-repos submodule dir. Try to pass with GITHUB_REPOS_MODULE_DIR"; \
+	fi; \
 	need_commit=""; \
 	for org_dir_sync in "$${orgs_dirs[@]}"; do \
-		sync_org_with_templates "$$org_dir_sync"; \
+		sync_org_with_templates "$$org_dir_sync" "$$module_dir"; \
 		if git add "$$org_dir_sync"; then \
 			need_commit="true"; \
 		fi; \
@@ -220,6 +291,10 @@ gh/repo/organizations/sync: gh/check/deps ## Sync current organizations (owners)
 	exit 0
 
 gh/repo/upgrade: gh/bins/install gh/bins/check/required gh/bins/upgrade gh/repo/organizations/sync ## Upgrade deps and sync organizations template and upgrade .gitignore github-repos module
+	@##~ GITHUB_REPOS_MODULE_DIR=PATH - path to makefile-inc/github-repos dir inside repo.
+	@##~                                Optional. If not passed try to resolve in order:
+	@##~                                - makefile-github-repos dir directly
+	@##~                                - extract path from $(CURDIR)/.gitmodules by makefile-inc/github-repos.git substring
 	@${INCLUDE_ECHO} \
 	if ! cp "$(_REPOS_ROOT_DIR)/.gitignore" "$(CURDIR)/.gitignore"; then \
 		exit_with_err "Cannot copy .gitignore from makefile-inc/github-repos '$(_REPOS_ROOT_DIR)/.gitignore' to cur infra '$(CURDIR)/.gitignore'"; \
@@ -241,15 +316,23 @@ gh/check/deps: gh/bins/check/required git-crypt/repo/symmetric/check/unlocked or
 
 gh/infra/organizations/add: gh/check/deps ## Prepare new organization (owner) opentofu dir from template
 	@##~ ORG_NAME=NAME - New organization (owner) name
+	@##~ GITHUB_REPOS_MODULE_DIR=PATH - path to makefile-inc/github-repos dir inside repo.
+	@##~                                Optional. If not passed try to resolve in order:
+	@##~                                - makefile-github-repos dir directly
+	@##~                                - extract path from $(CURDIR)/.gitmodules by makefile-inc/github-repos.git substring
 	@${_GH_SYNC_ORGS_INCLUDES} \
 	if [ -z "$$ORG_NAME" ]; then \
 		exit_with_err "Org name not passed with 'ORG_NAME' param (env)"; \
+	fi; \
+	module_dir=""; \
+	if ! module_dir="$$(try_extract_module_dir "$$GITHUB_REPOS_MODULE_DIR")"; then \
+		exit_with_err "Cannot resolve or incorrect makefile-inc/github-repos submodule dir. Try to pass with GITHUB_REPOS_MODULE_DIR"; \
 	fi; \
 	org_dir="$(_GH_ORGANIZATIONS_DIR)/$$ORG_NAME"; \
 	if ! mkdir -p "$$org_dir"; then \
 		exit_with_err "Cannot create owner dir '$$org_dir'"; \
 	fi; \
-	if sync_org_with_templates "$$org_dir"; then \
+	if sync_org_with_templates "$$org_dir" "$$module_dir"; then \
 		echo_info "Org '$$ORG_NAME' prepared. Nothing to commit"; \
 		exit 0; \
 	fi; \
@@ -266,14 +349,14 @@ gh/infra/organizations/add: gh/check/deps ## Prepare new organization (owner) op
 gh/infra/sync: export WORKING_DIR = $(CURDIR)
 gh/infra/sync: gh/check/deps ## Sync repos with github
 	@##~ TOKENS_FILE=PATH  - Path to github tokens file. See $(CURDIR)/sync.sh -h for more info
-	@##~                    By default, use $(CURDIR)/.tokens.env
+	@##~                     By default, use $(CURDIR)/.tokens.env
 	@##~ ORG_TO_SYNC=NAME  - if passed will sync only passed organization
 	@##~ REPO_TO_SYNC=NAME - if passed will sync only passed repo in organization ORG_TO_SYNC
 	@##~                     ORG_TO_SYNC should be passed with REPO_TO_SYNC
 	@##~ SYNC_ONLY=ORG[/REPO] - if passed will sync only passed repo in organization
 	@##~                        or will sync all repos passed in organization
 	@##~ SHOW_SENSITIVE=true  - if passed tofu plan will output sensitives.
-	@##~                        Useful for import exists repositories 
+	@##~                        Useful for import exists repositories
 	@if [ -z "$$TOKENS_FILE" ]; then \
 		export TOKENS_FILE="$(CURDIR)/.tokens.env"; \
 	fi; \
