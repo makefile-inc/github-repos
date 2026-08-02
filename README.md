@@ -639,3 +639,16 @@ make gh/infra/sync ORG_TO_SYNC=organization-name
 ```bash
 make gh/infra/sync ORG_TO_SYNC=organization-name REPO_TO_SYNC=repo-name
 ```
+
+## Development
+
+### Upgrade binaries
+
+- Copy binaries to `$(CURDIR)/bin`
+- Run:
+
+```bash
+make gh/bins/archive
+```
+
+- Commit
