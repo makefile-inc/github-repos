@@ -1,5 +1,4 @@
 _INC_MK_REPOS_ROOT_DIR_WITH_SLASH := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 _INC_MK_REPOS_ROOT_DIR := $(_INC_MK_REPOS_ROOT_DIR_WITH_SLASH:/=)
 
-include $(_INC_MK_REPOS_ROOT_DIR)/makefile-git-crypt/*.mk
 include $(_INC_MK_REPOS_ROOT_DIR)/*.mk
