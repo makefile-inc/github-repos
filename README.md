@@ -123,8 +123,8 @@ During install binaries will unarchive to `$(CURDIR)/bin` directory.
 
 Binaries will install with next targets:
 - `gh/bins/install`
-- `gh/bins/install`
 - `gh/bins/upgrade`
+- `gh/repo/upgrade`
 - and with init repo target `gh/repo/new/init`
 
 ### Opentofu (terraform) module
@@ -138,6 +138,35 @@ This module:
 - add variables and secrets for repo
 - enable `github actions` debug
 - protect additional branches and tags with same rules for default branch and `v*` tags.
+
+Repo will create (change during import) with next unchangeable settings:
+- `archive when destroy` - see [remove repos](#remove-repos) section
+- `issues` enabled
+- `discussions`, `projects`, `wiki` disabled
+- `delete branches on merge` enabled
+- pull request merge settings:
+  - `merge commit` disabled
+  - `squash` and `rebase` enabled.
+    This needs for get linear history on default branch
+  - `commit title` is pull request title.
+    For prevent incorrect commit message like `++`
+  - `commit message` is pull request title.
+    - Pull request description should contains goals, all changes, fixes and motivations 
+      for perfect pr description. User can see all motivations in changes.
+    - Also, because you can migrate from github to another solutions, your
+      commit history should contains all motivations for every commit.
+    - Git should source of true for all description and motivations about every change,
+      because all solutions can stale, git is immortal 😊.
+    - Also, if you will use `git blame`, you will see change motivation straightaway
+      in your tools. 
+- next security setting will disable for private repos, because these settings only available
+  in paid-plans and can break destroy repo. Also, you can use third-party solutions for them:
+  - `code security`
+  - `secret scanning`
+  - `secret scanning push protection`
+- next security setting will disable for all repos
+  - `secret_scanning_ai_detection` (tokens economy)
+  - `secret_scanning_non_provider_patterns` (see motivation below for security settings)
 
 #### Opentofu (terraform) module. Variables
 
