@@ -46,5 +46,5 @@ terraform.rc
 bin/
 .mirror/*.tmp
 .tokens.env
-import.tf
-import_repos_list.tf
+organizations/**/import.tf
+organizations/**/import_repos_list.tf

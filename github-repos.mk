@@ -315,7 +315,9 @@ organizations:
 gh/check/deps: gh/bins/check/required git-crypt/repo/symmetric/check/unlocked organizations
 
 gh/infra/organizations/add: gh/check/deps ## Prepare new organization (owner) opentofu dir from template
-	@##~ ORG_NAME=NAME - New organization (owner) name
+	@##~ ORG_NAME=NAME    - New organization (owner) name
+	@##~ WITH_IMPORT=true - if passed copy needed files to import repositories to new organization dir.
+	@##~                    Optional for new organization without need import exists repos
 	@##~ GITHUB_REPOS_MODULE_DIR=PATH - path to makefile-inc/github-repos dir inside repo.
 	@##~                                Optional. If not passed try to resolve in order:
 	@##~                                - makefile-github-repos dir directly
@@ -339,6 +341,13 @@ gh/infra/organizations/add: gh/check/deps ## Prepare new organization (owner) op
 	if git add "$$org_dir"; then \
 		if ! git commit -m "Add/prepare org '$$ORG_NAME'"; then \
 			echo_warn "Cannot commit new org '$$ORG_NAME' to git"; \
+		fi; \
+	fi; \
+	if [ -n "$$WITH_IMPORT" ]; then \
+		import_src="$(_REPOS_ROOT_DIR)./import"; \
+		echo_info "Copy files from '$$import_src' to import exist repositories to '$$org_dir'"; \
+		if ! cp -v "$${import_src}/"* "$$org_dir"; then \
+			exit_with_err "Cannot copy imports files with 'cp -v $${import_src}/* $$org_dir'"; \
 		fi; \
 	fi; \
 	echo_info "Org '$$ORG_NAME' prepared and commit to git!"; \

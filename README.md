@@ -376,13 +376,13 @@ For import these repositories you need:
 - [init repo](#init-new-repository)
 - [generate token](#generate-token)
 - [prepare tokens file](#add-tokens-file)
-- [add organization to repo](#add-organization-owner)
+- [add organization to repo](#add-organization-owner) with param `WITH_IMPORT=true`:
   ```bash
-  make gh/infra/organizations/add ORG_NAME=github-user
+  make gh/infra/organizations/add ORG_NAME=github-user WITH_IMPORT=true
   ```
 - if you have paid github plan for organization, change `local.have_paid_plan` to `true` in `./organizations/github-user/paid_plan.tf`
-- add next files with contents:
-  - `./organizations/github-user/repos.tf` (all repos to import **should be** added to `local._import_repos` in `import_repos_list.tf`):
+- add/change next files with contents:
+  - `./organizations/github-user/repos.tf` (all repos to import **should be add** to `local._import_repos` in `import_repos_list.tf`):
     ```hcl
     locals {
       repos = {
@@ -418,7 +418,8 @@ For import these repositories you need:
         }
     }
     ```
-  - `./organizations/github-user/import_repos_list.tf` (all repos in `local._import_repos` **should be** add in `repos.tf`!) :
+  - `./organizations/github-user/import_repos_list.tf` (all repos in `local._import_repos` **should be add** in `repos.tf`!) :
+    Add repos list to var `local_import_repos` like:
     ```hcl
     locals {
         # list repos for import
@@ -428,98 +429,9 @@ For import these repositories you need:
             "test-tf-import-private",
         ]
     }
-    ```
-  - `./organizations/github-user/import.tf` (**THIS FILE SHOULD NOT BE CHANGED!**):
-    ```hcl
-    locals {
-        # consume import repos with variables
-        _repos_with_vars = [ 
-            for name, r in local.repos: name 
-                if contains(local._import_repos, name) && contains(keys(r), "variables") && length(r.variables) > 0 
-        ]
-
-        # create lists for each repo with values "repo_name:variable_name" (it is key for import)
-        _var_repos_list = [ 
-            for repo_name in local._repos_with_vars: [ 
-                for var_name, var_val in local.repos[repo_name].variables: "${repo_name}:${var_name}" 
-            ] 
-        ]
-        
-        # all variables for all repos in one list in format "repo_name:variable_name"
-        # for using in import for_each
-        _vars_list = flatten(local._var_repos_list)
-
-        # consume import repos with secrets
-        _repos_with_secrets = [ 
-            for name, s in local.secrets: name 
-                if contains(local._import_repos, name) && length(s) > 0 
-        ]
-
-        # create lists for each repo with values "repo_name:secret_name" (it is key for import)
-        _secrets_repos_list = [ 
-            for repo_name in local._repos_with_secrets: [
-                for secret_name, secret_val in local.secrets[repo_name]: "${repo_name}:${secret_name}" 
-            ] 
-        ]
-
-        # all secrets for all repos in one list in format "repo_name:secret_name"
-        # for using in import for_each
-        _secrets_list = flatten(local._secrets_repos_list)
-
-        # consume import repos with enabled actions debug
-        # we need only repos here because variable name is constant for enable debug
-        # and we construct import id from repo name and constant
-        _actions_debug_repos = [ for name, r in local.repos: name if contains(local._import_repos, name) && r.enable_debug_actions ] 
-    }
-
-    # import repositories
-    import {
-        to = module.repos[each.key].github_repository.repo
-        id = each.key
-
-        for_each = {
-            for r in local._import_repos: r => r
-        }
-    }
-
-    # Import variables
-    import {
-        # each.key has format "repo_name:variable_name", see _vars_list
-        # github_actions_variable.from_user resource constrict with for_each, name of resource is name of variable
-        to = module.repos[split(":", each.key)[0]].github_actions_variable.from_user[split(":", each.key)[1]]
-        id = each.key
-
-        for_each = {
-            for v in local._vars_list: v => v
-        }
-    }
-
-    # Import actions debug var
-    import {
-        # 0 index because github_actions_variable.actions_debug resource is conditional
-        # depends on repo.settings.enable_debug_actions
-        to = module.repos[each.key].github_actions_variable.actions_debug[0]
-        # id for variables "repo_name:variable_name"
-        # actions debug enable manage with variable ACTIONS_STEP_DEBUG
-        id = "${each.key}:ACTIONS_STEP_DEBUG"
-
-        for_each = {
-            for r in local._actions_debug_repos: r => r
-        }
-    }
-
-    # Import secrets
-    import {
-        # each.key has format "repo_name:secret_name", see _secrets_list
-        # github_actions_secret.from_user resource constrict with for_each, name of resource is name of secret
-        to = module.repos[split(":", each.key)[0]].github_actions_secret.from_user[split(":", each.key)[1]]
-        id = each.key
-
-        for_each = {
-            for s in local._secrets_list: s => s
-        }
-    }
-    ```
+    ``` 
+  - `./organizations/github-user/import.tf` added with run `gh/infra/organizations/add` target with param `WITH_IMPORT=true`.
+    **THIS FILE SHOULD NOT BE CHANGED!**
 - In current import realization you can import `repos` `variables` (with `enable_debug_actions` setting) and `secrets`.
   **Rulesets created by hand does not support!**
   We can add another settings, like `immutable_tags` and `keep_branches` or change description safe,
@@ -612,7 +524,9 @@ It needs for prevent unnecessary destroy repo!
 - `gh/infra/organizations/add` - prepare (add) new organization (owner) opentofu dir from `./.template`
   
   Params:
-  - `ORG_NAME`=*NAME* - new organization (owner) name
+  - `ORG_NAME`=*NAME*    - new organization (owner) name
+  - `WITH_IMPORT`=*true* - if passed copy needed files to import repositories to new organization dir.
+	  Optional for new organization without need import exists repos
   - `GITHUB_REPOS_MODULE_DIR`=*PATH* - path to makefile-inc/github-repos dir inside repo.
 	    Optional. If not passed try to resolve in order:
 	   - `makefile-github-repos` dir directly
