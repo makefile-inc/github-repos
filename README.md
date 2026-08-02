@@ -622,7 +622,8 @@ make gh/infra/sync ORG_TO_SYNC=organization-name REPO_TO_SYNC=repo-name
 
 ### Upgrade binaries
 
-- Copy binaries to `$(CURDIR)/bin`
+In this repo:
+- Copy binaries to `./bin`
 - Run:
 
   ```bash
