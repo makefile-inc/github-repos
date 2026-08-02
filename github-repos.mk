@@ -300,12 +300,55 @@ gh/repo/upgrade: gh/bins/install gh/bins/check/required gh/bins/upgrade gh/repo/
 		exit_with_err "Cannot copy .gitignore from makefile-inc/github-repos '$(_REPOS_ROOT_DIR)/.gitignore' to cur infra '$(CURDIR)/.gitignore'"; \
 	fi
 
-gh/repo/unlock: gh/bins/install gh/bins/check/required ## Unlock infra repository with git-crypt after clone
+gh/repo/unlock: gh/bins/install gh/bins/check/required ## Unlock infra repository with git-crypt locally
 	@##~ KEY_PATH=PATH - path to key file to unlock
 	@$(MAKE) git-crypt/repo/symmetric/unlock
 
 gh/repo/lock: gh/bins/install gh/bins/check/required ## Lock infra repository locally
 	@$(MAKE) git-crypt/repo/lock
+
+gh/repo/unlock/after-clone: ## Unlock infra repository fully after clone
+	@##~ KEY_PATH=PATH - path to key file to unlock
+	@${INCLUDE_ECHO} \
+	if [ -z "$$KEY_PATH" ]; then \
+		exit_with_err "git-crypt key file is not provided with KEY_PATH param (env)"; \
+	fi; \
+	user_name="$(USER)"; \
+	if [ -z "$$user_name" ]; then \
+		exit_with_err "User name is empty in USER env"; \
+	fi; \
+	echo_info "Chown to '$$user_name:$$user_name' git-crypt key file '$$KEY_PATH' with sudo"; \
+	if ! sudo chown "$$user_name:$$user_name" $$KEY_PATH; then \
+		exit_with_err "Cannot chown git-crypt key file '$$KEY_PATH'"; \
+	fi; \
+	key_file=""; \
+	if ! key_file="$$(realpath "$$KEY_PATH")"; then \
+		exit_with_err "Cannot get real path for '$$KEY_PATH'"; \
+	fi; \
+	if [ ! -f "$$key_file" ]; then \
+		exit_with_err "git-crypt key file '$$key_file' is not file"; \
+	fi; \
+	echo_info "Install deps from mirror"; \
+	if ! $(MAKE) gh/repo/upgrade; then \
+		exit_with_err "Cannot install deps from mirror with '$(MAKE) gh/repo/upgrade'"; \
+	fi; \
+	echo_info "Unlock repo with git-crypt key '$$key_file'"; \
+	if ! $(MAKE) gh/repo/unlock KEY_PATH="$$key_file"; then \
+		exit_with_err "Cannot unlock repo with '$(MAKE) gh/repo/unlock KEY_PATH=$$key_file'"; \
+	fi; \
+	if ! $(MAKE) git-crypt/repo/symmetric/check/unlocked; then \
+		exit_with_err "Repo is not unlocked"; \
+	fi; \
+	remove_key_file=""; \
+	read -p "Remove key file '$$key_file' [y/n]: " remove_key_file; \
+	if [[ "$$remove_key_file" == "y" ]]; then \
+		echo_warn "Remove file $$key_file"; \
+		if ! rm "$$key_file"; then \
+			echo_err "Key file '$$key_file' is not removed!"; \
+		fi; \
+		exit 0; \
+	fi; \
+	echo_warn "Removing key file '$$key_file' skipped"
 
 ##@ Github repos. Infra. Organizations
 

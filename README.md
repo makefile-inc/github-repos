@@ -305,25 +305,24 @@ After run, save key file `PATH_TO_SAVE_GIT_CRYPT_KEY` in secret store to unlock 
 git clone --recurse-submodules YOUR_INFRA_REPO github-repos && cd github-repos
 ```
 
-###### Unlock repo
+You can use `gh/repo/unlock/after-clone` target with param `KEY_PATH`. 
 
-- Save `git-crypt` key to file, for example `~/src/github-repos.key`
-- if need chmod 
+**WARNING! We mean that you will use temp git-crypt key file!**
+
+This target will do:
+- check `KEY_PATH` passed and not empty
+- chown `KEY_PATH` to `$(USER):$(USER)` with `sudo`
+- check thar `KEY_PATH` is file
+- install deps from local mirror with target `gh/repo/upgrade`
+- unlock repo with `git-crypt` with target `gh/repo/unlock` and passed key file
+- ask user about remove key file and remove if get accept from user.
+
+For example:
+- Save `git-crypt` key to **temp file**, for example `~/src/github-repos.key`
+- run
 
   ``` bash
-  sudo chmod "${USER}:${USER}"
-  ```
-
-- Run commands:
-  ```bash
-  make gh/repo/upgrade
-  make gh/repo/unlock KEY_PATH=~/src/github-repos.key
-  make git-crypt/repo/symmetric/check/unlocked
-  ```
-
-- Remove key
-  ```bash
-  rm -f ~/src/github-repos.key
+  make gh/repo/unlock/after-clone KEY_PATH=~/src/github-repos.key
   ```
 
 ##### Generate token
@@ -528,13 +527,11 @@ It needs for prevent unnecessary destroy repo!
   Params:
   - `KEY_PATH`=*PATH* - path to save git-crypt key. Should be outside the repo (current dir)
 
-- `gh/repo/organizations/sync` - sync current organizations (owners) with opentofu dir template.
-   
-   Params:
-   - `GITHUB_REPOS_MODULE_DIR`=*PATH* - path to makefile-inc/github-repos dir inside repo.
-	    Optional. If not passed try to resolve in order:
-	   - `makefile-github-repos` dir directly
-	   - extract path from `$(CURDIR)/.gitmodules` by `makefile-inc/github-repos.git` substring
+- `gh/repo/unlock/after-clone` - unlock infra repository fully after clone.
+  See [clone repo](#clone-exists-with-submodules) section for more information.
+
+  Params:
+  - `KEY_PATH`=*PATH* - path to save git-crypt key. Should be outside the repo (current dir)
 
 - `gh/repo/upgrade` - upgrade deps and sync organizations template and upgrade `.gitignore` after upgrade `github-repos` module
    
@@ -544,9 +541,17 @@ It needs for prevent unnecessary destroy repo!
 	   - `makefile-github-repos` dir directly
 	   - extract path from `$(CURDIR)/.gitmodules` by `makefile-inc/github-repos.git` substring
 
-- `gh/repo/unlock` - unlock your repository with `git-crypt` after clone
+- `gh/repo/unlock` - unlock infra repository with `git-crypt` locally
 
 - `gh/repo/lock` - lock infra repository locally
+
+- `gh/repo/organizations/sync` - sync current organizations (owners) with opentofu dir template.
+   
+   Params:
+   - `GITHUB_REPOS_MODULE_DIR`=*PATH* - path to makefile-inc/github-repos dir inside repo.
+	    Optional. If not passed try to resolve in order:
+	   - `makefile-github-repos` dir directly
+	   - extract path from `$(CURDIR)/.gitmodules` by `makefile-inc/github-repos.git` substring
 
 ### Organizations
 
