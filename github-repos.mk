@@ -28,7 +28,7 @@ function check_required_binaries() {\
 		fi; \
 		local new_required=(); \
 		for r_bin in "$${required_bins[@]}"; do \
-			if [[ "$$fl" =~ "$$r_bin" ]]; then \
+			if [[ "$$fl" =~ $$r_bin ]]; then \
 				continue; \
 			fi; \
 			new_required+=("$$r_bin"); \
@@ -57,9 +57,6 @@ function try_extract_module_dir() { \
 	if [ -n "$$passed_dir" ]; then \
 		direct_path="$${passed_dir%/}"; \
 		direct_path="$${passed_dir#$(CURDIR)/}"; \
-		if ! direct_path="$$(basename "")"; then \
-			echo_err "Cannot get basename form '$$passed_dir'"; \
-		fi; \
 	fi; \
 	if [ -f "$(CURDIR)/$${direct_path}/$${module_dir}/$${main_f}" ]; then \
 		echo -n "$$direct_path"; \
@@ -80,7 +77,7 @@ function try_extract_module_dir() { \
 		return 1; \
 	fi; \
 	local regex="\\s+path\\s+=\\s+([[:graph:]]+)"; \
-	if [[ "$$found_m" =~ $regex ]]; then \
+	if [[ "$$found_m" =~ $$regex ]]; then \
 		local path_from_m="$${BASH_REMATCH[1]}"; \
 		path_from_m="$${path_from_m%/}"; \
 		if [ -z "$$path_from_m" ]; then \
@@ -106,7 +103,7 @@ function sync_org_with_templates() { \
 	if [ -n "$$module_dir" ]; then \
 		if [[ "$$module_dir" != */ ]]; then \
 			module_dir="$${module_dir}/"; \
-		fi; 
+		fi; \ 
 	fi; \
 	local org_name=""; \
 	if ! org_name="$$(basename "$$org_dir")"; then \
@@ -131,7 +128,7 @@ function sync_org_with_templates() { \
 		fi; \
 		local base_template_name=""; \
 		if ! base_template_name="$$(basename "$$template_file")"; then \
-			exit_with_err "Cannot get base name for '$$$template_file'"; \
+			exit_with_err "Cannot get base name for '$$template_file'"; \
 		fi; \
 		local full_file_path="$${org_dir}/$${tf_file}"; \
 		if [ -f "$$full_file_path" ]; then \
@@ -261,8 +258,7 @@ gh/repo/organizations/sync: gh/check/deps ## Sync current organizations (owners)
 	@##~                                Optional. If not passed try to resolve in order:
 	@##~                                - makefile-github-repos dir directly
 	@##~                                - extract path from $(CURDIR)/.gitmodules by makefile-inc/github-repos.git substring
-	@set -x; \
-	${_GH_SYNC_ORGS_INCLUDES} \
+	@${_GH_SYNC_ORGS_INCLUDES} \
 	orgs_dirs=(); \
 	while IFS= read -r -d '' org_dir; do \
 		echo_info "Found org dir '$$org_dir'"; \
