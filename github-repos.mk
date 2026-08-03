@@ -148,7 +148,7 @@ function sync_org_with_templates() { \
 		fi; \
 		for tmp_str in "$${!replaces_map[@]}"; do \
 			local tmp_val="$${replaces_map[$$tmp_str]}"; \
-			if ! sed -i "s/$$tmp_str/$$tmp_val/g" "$$full_file_path"; then \
+			if ! sed -i "s|$$tmp_str|$$tmp_val|g" "$$full_file_path"; then \
 				exit_with_err "Cannot replace replace '$$tmp_str' to '$$tmp_val' in file '$$full_file_path'"; \
 			fi; \
 		done; \
