@@ -283,9 +283,10 @@ gh/repo/organizations/sync: gh/check/deps
 			need_commit="true"; \
 		fi; \
 	done; \
+	src_ignore="$(_REPOS_ROOT_DIR)/.gitignore"; \
 	dest_ignore="$(CURDIR)/.gitignore"; \
-	if ! cp "$(_REPOS_ROOT_DIR)/.gitignore" "$$$dest_ignore"; then \
-		exit_with_err "Cannot copy .gitignore from makefile-inc/github-repos '$(_REPOS_ROOT_DIR)/.gitignore' to cur infra '$(CURDIR)/.gitignore'"; \
+	if ! cp "$$src_ignore" "$$dest_ignore"; then \
+		exit_with_err "Cannot copy .gitignore from makefile-inc/github-repos '$$src_ignore' to cur infra '$$dest_ignore'"; \
 	fi; \
 	if git add "$$dest_ignore"; then \
 		need_commit="true"; \
