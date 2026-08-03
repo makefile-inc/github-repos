@@ -103,7 +103,7 @@ function sync_org_with_templates() { \
 	if [ -n "$$module_dir" ]; then \
 		if [[ "$$module_dir" != */ ]]; then \
 			module_dir="$${module_dir}/"; \
-		fi; \ 
+		fi; \
 	fi; \
 	local org_name=""; \
 	if ! org_name="$$(basename "$$org_dir")"; then \
