@@ -181,14 +181,18 @@ gh/bins/archive: gh/bins/check/archive/deps gh/bins/check/required
 	dest_archive="$(_GH_STORED_BINS_ARCHIVE)"; \
 	tmp_sums_file="$(_GH_STORED_BINS_SUM).tmp"; \
 	sums_file="$(_GH_STORED_BINS_SUM)"; \
-	pushd .; \
+	if ! pushd . > /dev/null; then \
+		exit_with_err "Cannot run pushd"; \
+	fi; \
 	if ! cd "$$bin_dir"; then \
 		exit_with_err "Cannot cd to '$$bin_dir'"; \
 	fi; \
 	if ! $(FIND_BIN) . -type f -exec sha256sum -b {} + > "$$tmp_sums_file"; then \
 		exit_with_err "Cannot calculate binaries sha256 sum and write to temp file '$$tmp_sums_file'"; \
 	fi; \
-	popd; \
+	if !popd > /dev/null; then \
+		exit_with_err "Cannot run popd"; \
+	fi; \
 	$(FIND_BIN) "$$bin_dir" \( -type f -o -type d \) -printf "%P\n" | $(TAR_BIN) -cJvf "$$tmp_archive" --no-recursion -C "$$bin_dir" -T -; \
 	tar_statuses=("$${PIPESTATUS[@]}"); \
 	if [[ "$${tar_statuses[0]}" != "0" || "$${tar_statuses[1]}" != "0" ]]; then \
