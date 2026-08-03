@@ -240,7 +240,7 @@ gh/bins/install: bin gh/bins/check/archive/deps ## Install binaries from $(_REPO
 	if ! sha256sum -c "$$sum_file"; then \
 		exit_with_err "Fail to check binaries sha256 sum"; \
 	fi; \
-	popd;
+	popd
 
 gh/_bins/clean:
 	@rm -rfv "$(BINARIES_PATH)"
@@ -261,7 +261,8 @@ gh/repo/organizations/sync: gh/check/deps ## Sync current organizations (owners)
 	@##~                                Optional. If not passed try to resolve in order:
 	@##~                                - makefile-github-repos dir directly
 	@##~                                - extract path from $(CURDIR)/.gitmodules by makefile-inc/github-repos.git substring
-	@${_GH_SYNC_ORGS_INCLUDES} \
+	@set -x; \
+	${_GH_SYNC_ORGS_INCLUDES} \
 	orgs_dirs=(); \
 	while IFS= read -r -d '' org_dir; do \
 		echo_info "Found org dir '$$org_dir'"; \
