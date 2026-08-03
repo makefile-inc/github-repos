@@ -272,7 +272,7 @@ function extract_sync_only_params() {
 
   local -a sync_only_parts=()
 
-  readarray -t -d '' sync_only_parts < <(sed -z "s|/|\x00/g" < <(printf '%s' "$passed_string"))
+  readarray -t -d '' sync_only_parts < <(sed -z "s|/|\x00|g" < <(printf '%s' "$passed_string"))
 
   case "${#sync_only_parts}" in
     0)
