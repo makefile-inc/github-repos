@@ -257,7 +257,7 @@ gh/repo/new/init: gh/bins/install gh/bins/check/required ## Init new repository 
 	$(MAKE) make git-crypt/add/file FILE=.tofu.tfstate
 	$(MAKE) make git-crypt/add/file FILE=.tofu.tfstate.backup
 
-gh/repo/organizations/sync: gh/check/deps ## Sync current organizations (owners) with opentofu dir template
+gh/repo/organizations/sync: gh/check/deps
 	@##~ GITHUB_REPOS_MODULE_DIR=PATH - path to makefile-inc/github-repos dir inside repo.
 	@##~                                Optional. If not passed try to resolve in order:
 	@##~                                - makefile-github-repos dir directly
@@ -297,8 +297,14 @@ gh/repo/upgrade: gh/bins/install gh/bins/check/required gh/bins/upgrade gh/repo/
 	@##~                                - makefile-github-repos dir directly
 	@##~                                - extract path from $(CURDIR)/.gitmodules by makefile-inc/github-repos.git substring
 	@${INCLUDE_ECHO} \
-	if ! cp "$(_REPOS_ROOT_DIR)/.gitignore" "$(CURDIR)/.gitignore"; then \
+	dest_ignore="$(CURDIR)/.gitignore"; \
+	if ! cp "$(_REPOS_ROOT_DIR)/.gitignore" "$$$dest_ignore"; then \
 		exit_with_err "Cannot copy .gitignore from makefile-inc/github-repos '$(_REPOS_ROOT_DIR)/.gitignore' to cur infra '$(CURDIR)/.gitignore'"; \
+	fi; \
+	if git add "$$dest_ignore"; then \
+		if ! git commit -m "Sync .gitignore"; then \
+			echo_warn "Cannot commit .gitgnore. Skip"; \
+		fi; \
 	fi
 
 gh/repo/unlock: gh/bins/install gh/bins/check/required ## Unlock infra repository with git-crypt locally

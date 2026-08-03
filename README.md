@@ -272,7 +272,7 @@ After [add organization](#add-organization-owner) you will get next structure:
 ```
 Files description:
 - `main.tf` - contains tofu description about provider and run modules described in `repos.tf` and `repos.secrets.tf`.
-**This file should not change manually!**. For sync with new version use target `make gh/repo/organizations/sync`
+**This file should not change manually!**. For sync with new version use target `make gh/repo/upgrade`
 - `repos.tf` - contains local variable `repos` - map `repo-name` => object of repo settings. 
   All settings described [here](#opentofu-terraform-module-variables) for `settings` variable.
   **WARNINGS!**:
@@ -544,14 +544,6 @@ It needs for prevent unnecessary destroy repo!
 - `gh/repo/unlock` - unlock infra repository with `git-crypt` locally
 
 - `gh/repo/lock` - lock infra repository locally
-
-- `gh/repo/organizations/sync` - sync current organizations (owners) with opentofu dir template.
-   
-   Params:
-   - `GITHUB_REPOS_MODULE_DIR`=*PATH* - path to makefile-inc/github-repos dir inside repo.
-	    Optional. If not passed try to resolve in order:
-	   - `makefile-github-repos` dir directly
-	   - extract path from `$(CURDIR)/.gitmodules` by `makefile-inc/github-repos.git` substring
 
 ### Organizations
 
