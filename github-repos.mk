@@ -214,7 +214,7 @@ gh/bins/archive: gh/bins/check/archive/deps gh/bins/check/required
 	if ! git add "$$dest_archive" "$$sums_file"; then \
 		exit_with_err "Cannot add archive '$$dest_archive' to git"; \
 	fi; \
-	if ! git commit -m "Upgrade binaries archive"; then \
+	if ! git commit --allow-empty -m "Upgrade binaries archive"; then \
 		exit_with_err "Cannot commit archive '$$dest_archive' to git"; \
 	fi; \
 
@@ -292,7 +292,7 @@ gh/repo/organizations/sync: gh/check/deps
 		need_commit="true"; \
 	fi; \
 	if [ -n "$$need_commit" ]; then \
-		if ! git commit -m "Sync organization with templates"; then \
+		if ! git commit --allow-empty -m "Sync organization with templates"; then \
 			echo_warn "Cannot commit synced organizations to git"; \
 		fi; \
 	fi; \
@@ -388,7 +388,7 @@ gh/infra/organizations/add: gh/check/deps ## Prepare new organization (owner) op
 		exit 0; \
 	fi; \
 	if git add "$$org_dir"; then \
-		if ! git commit -m "Add/prepare org '$$ORG_NAME'"; then \
+		if ! git commit --allow-empty -m "Add/prepare org '$$ORG_NAME'"; then \
 			echo_warn "Cannot commit new org '$$ORG_NAME' to git"; \
 		fi; \
 	fi; \
