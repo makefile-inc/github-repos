@@ -298,7 +298,7 @@ gh/repo/organizations/sync: gh/check/deps
 	echo_info "Organizations synced with templates!"; \
 	exit 0
 
-gh/repo/upgrade: gh/bins/install gh/bins/check/required gh/bins/upgrade gh/repo/organizations/sync ## Upgrade deps and sync organizations template and upgrade .gitignore github-repos module
+gh/repo/upgrade: gh/bins/upgrade gh/bins/check/required gh/repo/organizations/sync ## Upgrade deps and sync organizations template and upgrade .gitignore github-repos module
 	@##~ GITHUB_REPOS_MODULE_DIR=PATH - path to makefile-inc/github-repos dir inside repo.
 	@##~                                Optional. If not passed try to resolve in order:
 	@##~                                - makefile-github-repos dir directly
