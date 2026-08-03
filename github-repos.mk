@@ -393,7 +393,7 @@ gh/infra/organizations/add: gh/check/deps ## Prepare new organization (owner) op
 		fi; \
 	fi; \
 	if [ -n "$$WITH_IMPORT" ]; then \
-		import_src="$(_REPOS_ROOT_DIR)./import"; \
+		import_src="$(_REPOS_ROOT_DIR)/.import"; \
 		echo_info "Copy files from '$$import_src' to import exist repositories to '$$org_dir'"; \
 		if ! cp -v "$${import_src}/"* "$$org_dir"; then \
 			exit_with_err "Cannot copy imports files with 'cp -v $${import_src}/* $$org_dir'"; \
