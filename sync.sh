@@ -274,7 +274,7 @@ function extract_sync_only_params() {
 
   readarray -t -d '' sync_only_parts < <(sed -z "s|/|\x00|g" < <(printf '%s' "$passed_string"))
 
-  case "${#sync_only_parts}" in
+  case "${#sync_only_parts[@]}" in
     0)
       return 0
       ;;
