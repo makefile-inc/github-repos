@@ -283,6 +283,13 @@ gh/repo/organizations/sync: gh/check/deps
 			need_commit="true"; \
 		fi; \
 	done; \
+	dest_ignore="$(CURDIR)/.gitignore"; \
+	if ! cp "$(_REPOS_ROOT_DIR)/.gitignore" "$$$dest_ignore"; then \
+		exit_with_err "Cannot copy .gitignore from makefile-inc/github-repos '$(_REPOS_ROOT_DIR)/.gitignore' to cur infra '$(CURDIR)/.gitignore'"; \
+	fi; \
+	if git add "$$dest_ignore"; then \
+		need_commit="true"; \
+	fi; \
 	if [ -n "$$need_commit" ]; then \
 		if ! git commit -m "Sync organization with templates"; then \
 			echo_warn "Cannot commit synced organizations to git"; \
@@ -297,15 +304,6 @@ gh/repo/upgrade: gh/bins/install gh/bins/check/required gh/bins/upgrade gh/repo/
 	@##~                                - makefile-github-repos dir directly
 	@##~                                - extract path from $(CURDIR)/.gitmodules by makefile-inc/github-repos.git substring
 	@${INCLUDE_ECHO} \
-	dest_ignore="$(CURDIR)/.gitignore"; \
-	if ! cp "$(_REPOS_ROOT_DIR)/.gitignore" "$$$dest_ignore"; then \
-		exit_with_err "Cannot copy .gitignore from makefile-inc/github-repos '$(_REPOS_ROOT_DIR)/.gitignore' to cur infra '$(CURDIR)/.gitignore'"; \
-	fi; \
-	if git add "$$dest_ignore"; then \
-		if ! git commit -m "Sync .gitignore"; then \
-			echo_warn "Cannot commit .gitgnore. Skip"; \
-		fi; \
-	fi
 
 gh/repo/unlock: gh/bins/install gh/bins/check/required ## Unlock infra repository with git-crypt locally
 	@##~ KEY_PATH=PATH - path to key file to unlock
