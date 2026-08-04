@@ -250,8 +250,22 @@ gh/bins/upgrade: gh/_bins/clean gh/bins/install ## Install binaries from $(_REPO
 
 ##@ Github repos. Repo itself
 
+gh/repo/gitignore/sync:
+	@${INCLUDE_ECHO} \
+	src_ignore="$(_REPOS_ROOT_DIR)/.gitignore"; \
+	dest_ignore="$(CURDIR)/.gitignore"; \
+	if ! cp "$$src_ignore" "$$dest_ignore"; then \
+		exit_with_err "Cannot copy .gitignore from makefile-inc/github-repos '$$src_ignore' to cur infra '$$dest_ignore'"; \
+	fi; \
+	if git add "$$dest_ignore"; then \
+		if ! git commit --allow-empty -m "Sync gitignore from github-repos module"; then \
+			echo_warn "Cannot sync gitignore from github-repos module"; \
+		fi; \
+	fi
+
 gh/repo/new/init: gh/bins/install gh/bins/check/required ## Init new repository after create with git-crypt
 	@##~ KEY_PATH=PATH - path to save git-crypt key. Should be outside the repo (current dir)
+	$(MAKE) gh/repo/gitignore/sync
 	$(MAKE) git-crypt/repo/symmetric/init
 	$(MAKE) make git-crypt/add/file FILE=*.secrets.tf
 	$(MAKE) make git-crypt/add/file FILE=.tofu.tfstate
@@ -283,14 +297,6 @@ gh/repo/organizations/sync: gh/check/deps
 			need_commit="true"; \
 		fi; \
 	done; \
-	src_ignore="$(_REPOS_ROOT_DIR)/.gitignore"; \
-	dest_ignore="$(CURDIR)/.gitignore"; \
-	if ! cp "$$src_ignore" "$$dest_ignore"; then \
-		exit_with_err "Cannot copy .gitignore from makefile-inc/github-repos '$$src_ignore' to cur infra '$$dest_ignore'"; \
-	fi; \
-	if git add "$$dest_ignore"; then \
-		need_commit="true"; \
-	fi; \
 	if [ -n "$$need_commit" ]; then \
 		if ! git commit --allow-empty -m "Sync organization with templates"; then \
 			echo_warn "Cannot commit synced organizations to git"; \
@@ -299,7 +305,7 @@ gh/repo/organizations/sync: gh/check/deps
 	echo_info "Organizations synced with templates!"; \
 	exit 0
 
-gh/repo/upgrade: gh/bins/upgrade gh/bins/check/required gh/repo/organizations/sync ## Upgrade deps and sync organizations template and upgrade .gitignore github-repos module
+gh/repo/upgrade: gh/bins/upgrade gh/bins/check/required gh/repo/gitignore/sync gh/repo/organizations/sync ## Upgrade deps and sync organizations template and upgrade .gitignore github-repos module
 	@##~ GITHUB_REPOS_MODULE_DIR=PATH - path to makefile-inc/github-repos dir inside repo.
 	@##~                                Optional. If not passed try to resolve in order:
 	@##~                                - makefile-github-repos dir directly
@@ -421,4 +427,4 @@ gh/infra/sync: gh/check/deps ## Sync repos with github
 		exit 1; \
 	fi; \
 
-.PHONY: gh/bins/archive gh/bins/install gh/bins/upgrade gh/bins/check/archive/deps gh/check/deps gh/bins/check/required gh/repo/unlock gh/infra/sync gh/infra/organizations/add gh/repo/new/init gh/repo/organizations/sync
+.PHONY: gh/repo/gitignore/sync gh/bins/archive gh/bins/install gh/bins/upgrade gh/bins/check/archive/deps gh/check/deps gh/bins/check/required gh/repo/unlock gh/infra/sync gh/infra/organizations/add gh/repo/new/init gh/repo/organizations/sync

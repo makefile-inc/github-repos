@@ -579,6 +579,49 @@ It needs for prevent unnecessary destroy repo!
 
 See [init new repo](#init-new-repository) section.
 
+#### Create new repo
+
+```bash
+mkdir -p github-infra-repo && cd github-infra-repo
+git init
+echo "# github infra repo" > README.md
+git add README.md
+git commit -m "init"
+git branch -m main
+git submodule add git@github.com:makefile-inc/github-repos.git makefile-github-repos
+pushd .
+cd makefile-github-repos
+git fetch -a && git checkout v0.1.0
+git submodule update --recursive --init 
+popd
+echo 'include $(CURDIR)/makefile-github-repos/include.mk.inc' > Makefile
+git add *
+git commit -m "Add github repos submodule"
+make gh/repo/new/init KEY_PATH=../infra-repos.key
+git add *
+git commit -m "Init github repos submodule"
+```
+
+### With already created repo:
+
+```bash
+git clone ... github-infra-repo # Your repo
+git checkout -b add-github-repos-module
+git submodule add git@github.com:makefile-inc/github-repos.git makefile-github-repos
+pushd .
+cd makefile-github-repos
+git fetch -a && git checkout v0.1.0
+git submodule update --recursive --init 
+popd
+echo 'include $(CURDIR)/makefile-github-repos/include.mk.inc' > Makefile
+git add *
+git commit -m "Add github repos submodule"
+make gh/repo/new/init KEY_PATH=../infra-repos.key
+git add *
+git commit -m "Init github repos submodule"
+git push -u origin add-github-repos-module
+```
+
 ### Clone exists
 
 See [clone](#clone-exists-with-submodules) section.
