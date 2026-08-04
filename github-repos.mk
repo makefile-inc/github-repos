@@ -304,7 +304,6 @@ gh/repo/upgrade: gh/bins/upgrade gh/bins/check/required gh/repo/organizations/sy
 	@##~                                Optional. If not passed try to resolve in order:
 	@##~                                - makefile-github-repos dir directly
 	@##~                                - extract path from $(CURDIR)/.gitmodules by makefile-inc/github-repos.git substring
-	@${INCLUDE_ECHO} \
 
 gh/repo/unlock: gh/bins/install gh/bins/check/required ## Unlock infra repository with git-crypt locally
 	@##~ KEY_PATH=PATH - path to key file to unlock
@@ -335,7 +334,7 @@ gh/repo/unlock/after-clone: ## Unlock infra repository fully after clone
 		exit_with_err "git-crypt key file '$$key_file' is not file"; \
 	fi; \
 	echo_info "Install deps from mirror"; \
-	if ! $(MAKE) gh/repo/upgrade; then \
+	if ! $(MAKE) gh/bins/install; then \
 		exit_with_err "Cannot install deps from mirror with '$(MAKE) gh/repo/upgrade'"; \
 	fi; \
 	echo_info "Unlock repo with git-crypt key '$$key_file'"; \
