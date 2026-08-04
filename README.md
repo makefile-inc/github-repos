@@ -598,8 +598,6 @@ echo 'include $(CURDIR)/makefile-github-repos/include.mk.inc' > Makefile
 git add *
 git commit -m "Add github repos submodule"
 make gh/repo/new/init KEY_PATH=../infra-repos.key
-git add *
-git commit -m "Init github repos submodule"
 ```
 
 ### With already created repo:
@@ -617,8 +615,6 @@ echo 'include $(CURDIR)/makefile-github-repos/include.mk.inc' > Makefile
 git add *
 git commit -m "Add github repos submodule"
 make gh/repo/new/init KEY_PATH=../infra-repos.key
-git add *
-git commit -m "Init github repos submodule"
 git push -u origin add-github-repos-module
 ```
 
