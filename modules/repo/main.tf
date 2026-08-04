@@ -46,8 +46,11 @@ resource "github_repository" "repo" {
     #   }
     # }
 
-    code_security  {
-      status = var.settings.is_public ? "enabled" : "disabled"
+    dynamic "code_security" {
+      for_each = var.settings.is_public ? [] : ["disabled"]
+      content {
+        status = code_security.value
+      }
     }
 
     secret_scanning {
@@ -58,12 +61,18 @@ resource "github_repository" "repo" {
       status = var.settings.is_public ? "enabled" : "disabled"
     }
 
-    secret_scanning_ai_detection {
-      status = "disabled"
+    dynamic "secret_scanning_ai_detection" {
+      for_each = var.settings.is_public ? [] : ["disabled"]
+      content {
+        status = secret_scanning_ai_detection.value
+      }
     }
 
-    secret_scanning_non_provider_patterns {
-      status = "disabled"
+    dynamic "secret_scanning_non_provider_patterns" {
+      for_each = var.settings.is_public ? [] : ["disabled"]
+      content {
+        status = secret_scanning_non_provider_patterns.value
+      }
     }
   }
 }
