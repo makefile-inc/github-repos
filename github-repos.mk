@@ -267,9 +267,9 @@ gh/repo/new/init: gh/bins/install gh/bins/check/required ## Init new repository 
 	@##~ KEY_PATH=PATH - path to save git-crypt key. Should be outside the repo (current dir)
 	$(MAKE) gh/repo/gitignore/sync
 	$(MAKE) git-crypt/repo/symmetric/init
-	$(MAKE) git-crypt/add/file FILE=*.secrets.tf
-	$(MAKE) git-crypt/add/file FILE=.tofu.tfstate
-	$(MAKE) git-crypt/add/file FILE=.tofu.tfstate.backup
+	$(MAKE) git-crypt/add/file FILE=*.secrets.tf SKIP_RE_ADD=true
+	$(MAKE) git-crypt/add/file FILE=.tofu.tfstate SKIP_RE_ADD=true
+	$(MAKE) git-crypt/add/file FILE=.tofu.tfstate.backup SKIP_RE_ADD=true
 
 gh/repo/organizations/sync: gh/check/deps
 	@##~ GITHUB_REPOS_MODULE_DIR=PATH - path to makefile-inc/github-repos dir inside repo.
