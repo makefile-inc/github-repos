@@ -26,6 +26,7 @@ variable "settings" {
 
     # additional tags patters that restricted update and delete
     # by default all v.* tags restricted
+    # all restriction available for public repositories or var.have_paid_plan == true
     # pattern docs:
     #   https://ruby-doc.org/core-2.5.1/File.html#method-c-fnmatch
     #   https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/creating-rulesets-for-a-repository#using-fnmatch-syntax
@@ -33,6 +34,7 @@ variable "settings" {
 
     # additional branch patterns that restricted no fast forward and delete
     # by default, default branch restricted
+    # all restriction available for public repositories or var.have_paid_plan == true
     # pattern docs:
     #   https://ruby-doc.org/core-2.5.1/File.html#method-c-fnmatch
     #   https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/creating-rulesets-for-a-repository#using-fnmatch-syntax
