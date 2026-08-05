@@ -38,6 +38,8 @@ resource "github_repository" "repo" {
   squash_merge_commit_title   = "PR_TITLE"
   squash_merge_commit_message = "PR_BODY"
 
+  web_commit_signoff_required = var.settings.is_public ? true : null
+
   security_and_analysis {
     # dynamic "advanced_security" {
     #   for_each = var.settings.is_public ? [] : ["disabled"]
@@ -160,6 +162,105 @@ resource "github_repository_ruleset" "immutable_tags" {
     update   = true
   }
 }
+
+# Push protection
+# NOT AVAILABLE NOW. See https://github.com/orgs/community/discussions/184348
+# locals {
+#   const_push_maintainers = "~MAINTAINERS"
+#   const_push_maintainers_id = 2
+
+#   push_protect = contains(keys(var.settings), "push_protect") ? var.settings.push_protect : {} 
+#   push_protect_wf = local.push_protect != null && contains(keys(local.push_protect), "workflows") ? local.push_protect.workflows : tolist([])
+#   push_protect_all = local.push_protect != null && contains(keys(local.push_protect), "all") ? local.push_protect.all : tolist([])
+  
+#   push_protect_wf_has_maintainers = contains(local.push_protect_wf, local.const_push_maintainers)
+#   push_protect_all_has_maintainers = contains(local.push_protect_all, local.const_push_maintainers)
+
+#   push_protect_wf_users = toset([ for u in local.push_protect_wf: u if u != local.const_push_maintainers ])
+#   push_protect_all_users = toset([ for u in local.push_protect_all: u if u != local.const_push_maintainers ])
+# }
+
+# data "github_user" "push_protect_wf" {
+#   for_each = local.push_protect_wf_users
+#   username = each.key
+# }
+
+# data "github_user" "push_protect_all" {
+#   for_each = local.push_protect_all_users
+#   username = each.key
+# }
+
+# resource "github_repository_ruleset" "restrict_push_workflows" {
+#   count = (var.have_paid_plan || var.settings.is_public) && (length(local.push_protect_wf) > 0 && length(local.push_protect_all) == 0) ? 1 : 0
+
+#   name        = "restrict_push_workflows"
+#   repository  = github_repository.repo.name
+#   target      = "push"
+#   enforcement = "active"
+
+#   rules {
+#     file_path_restriction {
+#       restricted_file_paths = [".github/workflows/*"]
+#     }
+#   }
+
+#   dynamic "bypass_actors" {
+#     for_each = concat(
+#       local.push_protect_wf_has_maintainers ? [{
+#         id = local.const_push_maintainers_id
+#         tp = "RepositoryRole"
+#       }] : [],
+
+#       length(local.push_protect_wf_users) > 0 ? [
+#         for u in data.github_user.push_protect_wf: {
+#           id = u.id
+#           tp = "User"
+#         }] : []
+#     )
+
+#     content {
+#       bypass_mode = "always"
+#       actor_id = bypass_actors.value.id
+#       actor_type = bypass_actors.value.tp
+#     }
+#   }
+# }
+
+# resource "github_repository_ruleset" "restrict_push_all" {
+#   count = (var.have_paid_plan || var.settings.is_public) && length(local.push_protect_all) > 0 ? 1 : 0
+
+#   name        = "restrict_push_all"
+#   repository  = github_repository.repo.name
+#   target      = "push"
+#   enforcement = "active"
+
+#   rules {
+#     file_path_restriction {
+#       restricted_file_paths = ["*"]
+#     }
+#   }
+
+#   dynamic "bypass_actors" {
+#     for_each = concat(
+#       local.push_protect_all_has_maintainers ? [{
+#         id = local.const_push_maintainers_id
+#         tp = "RepositoryRole"
+#       }] : [],
+
+#       length(local.push_protect_all_users) > 0 ? [
+#         for u in data.github_user.push_protect_all: {
+#           id = u.id
+#           tp = "User"
+#         }] : []
+#     )
+
+#     content {
+#       bypass_mode = "always"
+#       actor_id = bypass_actors.value.id
+#       actor_type = bypass_actors.value.tp
+#     }
+#   }
+# }
 
 resource "github_actions_variable" "actions_debug" {
   count = var.settings.enable_debug_actions ? 1 : 0

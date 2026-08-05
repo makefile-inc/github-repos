@@ -20,12 +20,13 @@ variable "settings" {
     # Variables to add to repository
     variables            = optional(map(string), {})
     # Secrets to add to repository
-    # If use in makefile-inc/gitub-repos please not pass directly
+    # If use in makefile-inc/github-repos please not pass directly
     # Use ./organizations/ORG/repos.secrets.tf => local.secrets var
     secrets              = optional(map(string), {})
 
     # additional tags patters that restricted update and delete
     # by default all v.* tags restricted
+    # all restriction available for public repositories or var.have_paid_plan == true
     # pattern docs:
     #   https://ruby-doc.org/core-2.5.1/File.html#method-c-fnmatch
     #   https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/creating-rulesets-for-a-repository#using-fnmatch-syntax
@@ -33,10 +34,29 @@ variable "settings" {
 
     # additional branch patterns that restricted no fast forward and delete
     # by default, default branch restricted
+    # all restriction available for public repositories or var.have_paid_plan == true
     # pattern docs:
     #   https://ruby-doc.org/core-2.5.1/File.html#method-c-fnmatch
     #   https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/creating-rulesets-for-a-repository#using-fnmatch-syntax
     keep_branches = optional(set(string), [])
+
+    # Protect push to repo in all branches
+    # Pass not null if need enable protection
+    # and list of user can always bypass protection
+    # available for public repositories or var.have_paid_plan == true
+    # NOT AVAILABLE NOW. See https://github.com/orgs/community/discussions/184348
+    # push_protect = optional(object({
+    #   # protect push .github/workflows/ directory
+    #   # this set contains github users name (not ids) for bypass protection
+    #   # can contains ~MAINTAINERS string that allow bypass for maintainers
+    #   # if pass 'all' attribute, workflows protection will skip 
+    #   workflows = optional(set(string), [])
+    #   # protect push ALL files
+    #   # this set contains github users name (not ids) for bypass protection
+    #   # can contains ~MAINTAINERS string that allow bypass for maintainers
+    #   # if pass this attribute, workflows protection will skip 
+    #   all = optional(set(string), [])
+    # }))
   })
 
   description = "Settings objects to repo"
