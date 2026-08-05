@@ -37,6 +37,22 @@ variable "settings" {
     #   https://ruby-doc.org/core-2.5.1/File.html#method-c-fnmatch
     #   https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/creating-rulesets-for-a-repository#using-fnmatch-syntax
     keep_branches = optional(set(string), [])
+
+    # Protect push to repo in all branches
+    # Pass not null if need enable protection
+    # and list of user can always bypass protection
+    push_protect = object({
+      # protect push .github/workflows/ directory
+      # this set contains github users name (not ids) for bypass protection
+      # can contains ~MAINTAINERS string that allow bypass for maintainers
+      # if pass 'all' attribute, workflows protection will skip 
+      workflows = set(string)
+      # protect push ALL files
+      # this set contains github users name (not ids) for bypass protection
+      # can contains ~MAINTAINERS string that allow bypass for maintainers
+      # if pass this attribute, workflows protection will skip 
+      all = set(string)
+    })
   })
 
   description = "Settings objects to repo"
