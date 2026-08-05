@@ -44,18 +44,19 @@ variable "settings" {
     # Pass not null if need enable protection
     # and list of user can always bypass protection
     # available for public repositories or var.have_paid_plan == true
-    push_protect = optional(object({
-      # protect push .github/workflows/ directory
-      # this set contains github users name (not ids) for bypass protection
-      # can contains ~MAINTAINERS string that allow bypass for maintainers
-      # if pass 'all' attribute, workflows protection will skip 
-      workflows = optional(set(string), [])
-      # protect push ALL files
-      # this set contains github users name (not ids) for bypass protection
-      # can contains ~MAINTAINERS string that allow bypass for maintainers
-      # if pass this attribute, workflows protection will skip 
-      all = optional(set(string), [])
-    }))
+    # NOT AVAILABLE NOW. See https://github.com/orgs/community/discussions/184348
+    # push_protect = optional(object({
+    #   # protect push .github/workflows/ directory
+    #   # this set contains github users name (not ids) for bypass protection
+    #   # can contains ~MAINTAINERS string that allow bypass for maintainers
+    #   # if pass 'all' attribute, workflows protection will skip 
+    #   workflows = optional(set(string), [])
+    #   # protect push ALL files
+    #   # this set contains github users name (not ids) for bypass protection
+    #   # can contains ~MAINTAINERS string that allow bypass for maintainers
+    #   # if pass this attribute, workflows protection will skip 
+    #   all = optional(set(string), [])
+    # }))
   })
 
   description = "Settings objects to repo"
