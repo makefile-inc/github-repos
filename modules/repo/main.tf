@@ -38,6 +38,8 @@ resource "github_repository" "repo" {
   squash_merge_commit_title   = "PR_TITLE"
   squash_merge_commit_message = "PR_BODY"
 
+  web_commit_signoff_required = true
+
   security_and_analysis {
     # dynamic "advanced_security" {
     #   for_each = var.settings.is_public ? [] : ["disabled"]
@@ -161,6 +163,8 @@ resource "github_repository_ruleset" "immutable_tags" {
   }
 }
 
+# Push protection
+# NOT AVAILABLE NOW. See https://github.com/orgs/community/discussions/184348
 # locals {
 #   const_push_maintainers = "~MAINTAINERS"
 #   const_push_maintainers_id = 2
