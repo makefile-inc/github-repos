@@ -214,7 +214,7 @@ resource "github_repository_ruleset" "restrict_push_workflows" {
         }] : []
     )
 
-    iterator = "act"
+    iterator = act
 
     content {
       bypass_mode = "always"
@@ -252,7 +252,7 @@ resource "github_repository_ruleset" "restrict_push_all" {
         }] : []
     )
 
-    iterator = "act"
+    iterator = act
 
     content {
       bypass_mode = "always"
