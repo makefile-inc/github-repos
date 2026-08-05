@@ -38,7 +38,7 @@ resource "github_repository" "repo" {
   squash_merge_commit_title   = "PR_TITLE"
   squash_merge_commit_message = "PR_BODY"
 
-  web_commit_signoff_required = true
+  web_commit_signoff_required = var.settings.is_public ? true : null
 
   security_and_analysis {
     # dynamic "advanced_security" {
