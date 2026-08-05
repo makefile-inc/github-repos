@@ -41,6 +41,7 @@ variable "settings" {
     # Protect push to repo in all branches
     # Pass not null if need enable protection
     # and list of user can always bypass protection
+    # available for public repositories or var.have_paid_plan == true
     push_protect = object({
       # protect push .github/workflows/ directory
       # this set contains github users name (not ids) for bypass protection
