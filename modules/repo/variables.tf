@@ -49,12 +49,12 @@ variable "settings" {
       # this set contains github users name (not ids) for bypass protection
       # can contains ~MAINTAINERS string that allow bypass for maintainers
       # if pass 'all' attribute, workflows protection will skip 
-      workflows = optional(set(string))
+      workflows = optional(set(string), [])
       # protect push ALL files
       # this set contains github users name (not ids) for bypass protection
       # can contains ~MAINTAINERS string that allow bypass for maintainers
       # if pass this attribute, workflows protection will skip 
-      all = optional(set(string))
+      all = optional(set(string), [])
     }))
   })
 
