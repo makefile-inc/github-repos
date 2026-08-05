@@ -37,7 +37,7 @@ Checkout to target version:
 ```bash
 pushd .
 cd makefile-github-repos
-git fetch -a && git checkout v0.1.0
+git fetch -a && git checkout v0.3.0
 git submodule update --recursive --init 
 popd
 ```
@@ -143,6 +143,7 @@ Repo will create (change during import) with next unchangeable settings:
 - `archive when destroy` - see [remove repos](#remove-repos) section
 - `issues` enabled
 - `discussions`, `projects`, `wiki` disabled
+- `sign-off` enabled for public repos
 - `delete branches on merge` enabled
 - pull request merge settings:
   - `merge commit` disabled
@@ -197,6 +198,9 @@ Module take next variables:
        - https://ruby-doc.org/core-2.5.1/File.html#method-c-fnmatch
        - https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/creating-rulesets-for-a-repository#using-fnmatch-syntax
 - `have_paid_plan` **(`bool`, Optional, default - `false`)** - Apply paid features (like rulesets) for private repos.
+
+We are using settings as standalone object, not separated variables for using maps of repositories
+and simple usage in organizations root modules.
 
 #### Opentofu (terraform) module. Usage
 
@@ -591,7 +595,7 @@ git branch -m main
 git submodule add git@github.com:makefile-inc/github-repos.git makefile-github-repos
 pushd .
 cd makefile-github-repos
-git fetch -a && git checkout v0.1.0
+git fetch -a && git checkout v0.3.0
 git submodule update --recursive --init 
 popd
 echo 'include $(CURDIR)/makefile-github-repos/include.mk.inc' > Makefile
@@ -600,7 +604,7 @@ git commit -m "Add github repos submodule"
 make gh/repo/new/init KEY_PATH=../infra-repos.key
 ```
 
-### With already created repo:
+#### With already created repo:
 
 ```bash
 git clone ... github-infra-repo # Your repo
@@ -608,7 +612,7 @@ git checkout -b add-github-repos-module
 git submodule add git@github.com:makefile-inc/github-repos.git makefile-github-repos
 pushd .
 cd makefile-github-repos
-git fetch -a && git checkout v0.1.0
+git fetch -a && git checkout v0.3.0
 git submodule update --recursive --init 
 popd
 echo 'include $(CURDIR)/makefile-github-repos/include.mk.inc' > Makefile
@@ -632,6 +636,174 @@ make gh/repo/upgrade
 
 See [here](#add-organizations-and-repos-to-your-repo).
 
+### Logical separation your repos in organization
+
+For example, `makefile-inc` contains two kinds of repos:
+- repos with includes 
+- tests repos for some repos.
+
+For each repos in the group we can have some same default setting and its setting can be rewrite for some repositories.
+And for different groups we can have different defaults.
+
+For example, every repositories should have 
+- next topics and can add additional topics: 
+  - `makefile`
+  - `make` 
+  - `makefile-snippets` 
+  - `includes`
+
+- `MIT` license 
+
+But for tests repos:
+- all repos names should start with `tests-`
+- unlicensed
+- description should be `Tests repository for repo ${REPO_URL}`
+
+
+For realize it, we can prepare next files structures: 
+
+```
+./organizations/makefile-inc
+├── repos-includes.tf # for includes repositories
+├── repos-tests.tf    # for tests repositories
+├── repos.tf          # merge repositories to one map
+```
+
+With next contents (see commentaries for descriptions):
+- `repos-includes.tf`:
+  ```hcl
+  locals {
+      # repositories lists with own settings for includes repos
+      _includes_repos_list = {
+          "common" = {
+              description = "Common makefiles includes for another repos"
+          }
+
+          "openapi" = {
+              description = "Makefiles includes for generations client and servers and conversions openapi specs"
+              topics      = [
+                  "openapi",
+              ]
+          }
+
+          "go" = {
+              description = "Includes for Make files for go operations like lint, test, build"
+              topics      = [
+                  "golang", 
+                  "linting",
+                  "testing",
+              ]
+          }
+
+          "git-crypt" = {
+              description = "Makefiles include for using git-crypt https://github.com/AGWA/git-crypt"
+              topics      = [
+                  "git", 
+                  "encryption",
+              ],
+
+              keep_branches = [
+                  "git-crypt-bin"
+              ],
+              immutable_tags = [
+                  "git-crypt-bin*",
+              ],
+          }
+
+          "github-repos" = {
+              description = "Manage Github repositories via opentofu (terraform)"
+              topics      = [
+                  "git", 
+                  "github",
+                  "terraform-module",
+                  "terraformed",
+                  "iac",
+                  "opentofu",
+              ]
+          }
+      }
+
+      # prepare desired repos list to merge in repos.tf
+      _includes_repos = {
+          # creates new map repo_name => settings to module via merges maps
+          for name, setts in local._includes_repos_list: name => merge(
+              # default settings map
+              {
+                  is_public   = true
+                  license     = "mit"
+                  enable_debug_actions = false
+              },
+
+              # override settings from repos list above 
+              setts,
+
+              # add required topics and add additional if they contains in repos list above 
+              {
+                  topics = concat(
+                      ["makefile", "make", "makefile-snippets", "includes"],
+                      contains(keys(setts), "topics") ? setts.topics : [],
+                  )
+              },
+          )
+      }
+  }
+  ```
+
+- `repos-tests.tf`:
+  ```hcl
+  locals {
+       # repositories lists for tests repos here we set settings different for module
+      _tests_repos_list = {
+          "git-crypt" = {
+              # each repo should contains 'repo_url' setting to set to description
+              repo_url = "https://github.com/makefile-inc/git-crypt"
+          }
+
+          "go" = {
+              repo_url = "https://github.com/makefile-inc/go"
+          }
+
+          "github-repos" = {
+              repo_url = "https://github.com/makefile-inc/github-repos"
+          }
+      }
+
+      # prepare desired repos list to merge in repos.tf
+      _test_repos = {
+          # creates new map repo_name_with_tests_prefix => settings to module via merges maps
+          for name, setts in local._tests_repos_list: "tests-${name}" => merge(
+              # default settings map
+              {
+                  is_public   = true
+                  license     = "unlicense"
+                  enable_debug_actions = true
+              },
+
+              # Add desired description with repo url from repos list above
+              {
+                  description = "Tests repository for repo ${setts.repo_url}"
+              },
+              
+              # if needs rewrite/add settings from repos list above
+              # repo with additional settings can contains 'settings' object
+              # if not passed, use empty object
+              contains(keys(setts), "settings") ? setts.settings : {},
+          )
+      }
+  }
+  ```
+
+- `repos-includes.tf`:
+  ```hcl
+  locals {
+      # module requires local.repos variable with list repos to sync
+      # merge all desired map from desired local variables for each group
+      repos = merge(
+          local._includes_repos, 
+          local._test_repos,
+      )
+  }
+  ```
 ### Sync
 
 #### With default tokens files
