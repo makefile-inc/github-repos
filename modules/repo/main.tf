@@ -214,12 +214,10 @@ resource "github_repository_ruleset" "restrict_push_workflows" {
         }] : []
     )
 
-    iterator = act
-
     content {
       bypass_mode = "always"
-      actor_id = act.id
-      actor_type = act.tp
+      actor_id = bypass_actors.id
+      actor_type = bypass_actors.tp
     }
   }
 }
@@ -252,12 +250,10 @@ resource "github_repository_ruleset" "restrict_push_all" {
         }] : []
     )
 
-    iterator = act
-
     content {
       bypass_mode = "always"
-      actor_id = act.id
-      actor_type = act.tp
+      actor_id = bypass_actors.id
+      actor_type = bypass_actors.tp
     }
   }
 }
