@@ -20,7 +20,7 @@ variable "settings" {
     # Variables to add to repository
     variables            = optional(map(string), {})
     # Secrets to add to repository
-    # If use in makefile-inc/gitub-repos please not pass directly
+    # If use in makefile-inc/github-repos please not pass directly
     # Use ./organizations/ORG/repos.secrets.tf => local.secrets var
     secrets              = optional(map(string), {})
 
