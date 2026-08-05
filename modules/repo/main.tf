@@ -216,8 +216,8 @@ resource "github_repository_ruleset" "restrict_push_workflows" {
 
     content {
       bypass_mode = "always"
-      actor_id = bypass_actors.id
-      actor_type = bypass_actors.tp
+      actor_id = bypass_actors.value.id
+      actor_type = bypass_actors.value.tp
     }
   }
 }
@@ -252,8 +252,8 @@ resource "github_repository_ruleset" "restrict_push_all" {
 
     content {
       bypass_mode = "always"
-      actor_id = bypass_actors.id
-      actor_type = bypass_actors.tp
+      actor_id = bypass_actors.value.id
+      actor_type = bypass_actors.value.tp
     }
   }
 }
