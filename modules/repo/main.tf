@@ -166,14 +166,14 @@ locals {
   const_push_maintainers_id = 2
 
   push_protect = contains(keys(var.settings), "push_protect") ? var.settings.push_protect : {} 
-  push_protect_wf = local.push_protect != null && contains(keys(local.push_protect), "workflows") ? local.push_protect.workflows : []
-  push_protect_all = local.push_protect != null && contains(keys(local.push_protect), "all") ? local.push_protect.all : []
+  push_protect_wf = local.push_protect != null && contains(keys(local.push_protect), "workflows") ? local.push_protect.workflows : tolist([])
+  push_protect_all = local.push_protect != null && contains(keys(local.push_protect), "all") ? local.push_protect.all : tolist([])
   
-  push_protect_wf_has_maintainer = contains(local.push_protect_wf, local.const_push_maintainers)
-  push_protect_all_has_maintainer = contains(local.push_protect_all, local.const_push_maintainers)
+  push_protect_wf_has_maintainers = contains(local.push_protect_wf, local.const_push_maintainers)
+  push_protect_all_has_maintainers = contains(local.push_protect_all, local.const_push_maintainers)
 
-  push_protect_wf_users = [ for u in local.push_protect_wf: u if u != local.const_push_maintainers ]
-  push_protect_all_users = [ for u in local.push_protect_all: u if u != local.const_push_maintainers ]
+  push_protect_wf_users = toset([ for u in local.push_protect_wf: u if u != local.const_push_maintainers ])
+  push_protect_all_users = toset([ for u in local.push_protect_all: u if u != local.const_push_maintainers ])
 }
 
 data "github_user" "push_protect_wf" {
@@ -202,7 +202,7 @@ resource "github_repository_ruleset" "restrict_push_workflows" {
 
   dynamic "bypass_actors" {
     for_each = concat(
-      local.push_protect_wf_has_maintainer ? [{
+      local.push_protect_wf_has_maintainers ? [{
         id = local.const_push_maintainers_id
         tp = "RepositoryRole"
       }] : [],
@@ -240,7 +240,7 @@ resource "github_repository_ruleset" "restrict_push_all" {
 
   dynamic "bypass_actors" {
     for_each = concat(
-      local.push_protect_all_has_maintainer ? [{
+      local.push_protect_all_has_maintainers ? [{
         id = local.const_push_maintainers_id
         tp = "RepositoryRole"
       }] : [],
