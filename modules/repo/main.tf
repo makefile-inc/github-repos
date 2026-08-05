@@ -166,8 +166,8 @@ locals {
   const_push_maintainers_id = 2
 
   push_protect = contains(keys(var.settings), "push_protect") ? var.settings.push_protect : {} 
-  push_protect_wf = contains(keys(local.push_protect), "workflows") ? local.push_protect.workflows : []
-  push_protect_all = contains(keys(local.push_protect), "all") ? local.push_protect.all : []
+  push_protect_wf = local.push_protect != null && contains(keys(local.push_protect), "workflows") ? local.push_protect.workflows : []
+  push_protect_all = local.push_protect != null && contains(keys(local.push_protect), "all") ? local.push_protect.all : []
   
   push_protect_wf_has_maintainer = contains(local.push_protect_wf, local.const_push_maintainers)
   push_protect_all_has_maintainer = contains(local.push_protect_all, local.const_push_maintainers)
