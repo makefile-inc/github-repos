@@ -119,7 +119,7 @@ Archive contains next binaries:
 - `registry.opentofu.org/integrations/github/6.13.0/PLATFORM/terraform-provider-github` - [github tofu provider](https://github.com/integrations/terraform-provider-github) binary with version `6.13.0`
 - `git-crypt` - static build of [git-crypt](https://github.com/AGWA/git-crypt) with version `0.8.0`
 
-During install binaries will unarchive to `$(CURDIR)/bin` directory.
+During install binaries will unarchive to `$(CURDIR)/.bin` directory.
 
 Binaries will install with next targets:
 - `gh/bins/install`
@@ -522,7 +522,7 @@ It needs for prevent unnecessary destroy repo!
 
 ### Mirror binaries
 
-- `gh/bins/upgrade` - install binaries from `.mirror` to `$(CURDIR)/bin`
+- `gh/bins/upgrade` - install binaries from `.mirror` to `$(CURDIR)/.bin`
 
 ### Your infra repo utils
 
@@ -831,7 +831,7 @@ make gh/infra/sync ORG_TO_SYNC=organization-name REPO_TO_SYNC=repo-name
 ### Upgrade binaries
 
 In this repo:
-- Copy binaries to `./bin`
+- Copy binaries to `./.bin`
 - Run:
 
   ```bash

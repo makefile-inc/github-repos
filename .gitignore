@@ -43,7 +43,7 @@ terraform.rc
 
 .tmp/
 
-bin/
+.bin/
 .mirror/*.tmp
 .tokens.env
 organizations/**/import.tf
