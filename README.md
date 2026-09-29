@@ -37,7 +37,7 @@ Checkout to target version:
 ```bash
 pushd .
 cd makefile-github-repos
-git fetch -a && git checkout v0.7.0
+git fetch -a && git checkout v0.8.0
 git submodule update --recursive --init 
 popd
 ```
@@ -67,7 +67,7 @@ include $(CURDIR)/makefile-github-repos/include.mk.inc
 ```bash
 pushd .
 cd makefile-github-repos
-git fetch -a && git checkout v0.7.0
+git fetch -a && git checkout v0.8.0
 git submodule update --recursive
 popd
 ```
@@ -101,6 +101,25 @@ make gh/repo/upgrade GITHUB_REPOS_MODULE_DIR="makefiles/github-repos"
 Sync root tofu module only force resync `main.tf` and add not present files.
 
 **But, before sync repos please check that another files not changed to prevent unnecessary destroy/change repositories!**
+
+### Help target customize
+
+By default, run `make` or `make help` output all libraries targets (includes `makefile-common`).
+
+For comfortable help output, we recommend add to your `Makefile` next lines after include `makefile-github-repos`
+(replace `YOUR PROJECT NAME` to you name of project):
+
+```Makefile
+include $(CURDIR)/makefile-github-repos/include.mk.inc
+
+HELP_LIBRARIES_FIRST := true
+export HELP_LIBRARIES_FIRST
+
+HELP_LIBRARIES_OUT := $(_INC_MK_REPOS_ROOT_DIR)
+export HELP_LIBRARIES_OUT
+
+##@ YOUR PROJECT NAME
+```
 
 ## Description
 
@@ -595,7 +614,7 @@ git branch -m main
 git submodule add git@github.com:makefile-inc/github-repos.git makefile-github-repos
 pushd .
 cd makefile-github-repos
-git fetch -a && git checkout v0.7.0
+git fetch -a && git checkout v0.8.0
 git submodule update --recursive --init 
 popd
 echo 'include $(CURDIR)/makefile-github-repos/include.mk.inc' > Makefile
@@ -612,7 +631,7 @@ git checkout -b add-github-repos-module
 git submodule add git@github.com:makefile-inc/github-repos.git makefile-github-repos
 pushd .
 cd makefile-github-repos
-git fetch -a && git checkout v0.7.0
+git fetch -a && git checkout v0.8.0
 git submodule update --recursive --init 
 popd
 echo 'include $(CURDIR)/makefile-github-repos/include.mk.inc' > Makefile
