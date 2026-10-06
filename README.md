@@ -37,7 +37,7 @@ Checkout to target version:
 ```bash
 pushd .
 cd makefile-github-repos
-git fetch -a && git checkout v0.9.0
+git fetch -a && git checkout v0.10.0
 git submodule update --recursive --init 
 popd
 ```
@@ -65,9 +65,15 @@ include $(CURDIR)/makefile-github-repos/include.mk.inc
 ## Update as submodule
 
 ```bash
+make common/git/submodule/upgrade SUBMODULE_DIR="makefile-github-repos" CHECKOUT_TO="v0.10.0"
+```
+
+or manually:
+
+```bash
 pushd .
 cd makefile-github-repos
-git fetch -a && git checkout v0.9.0
+git fetch -a && git checkout v0.10.0
 git submodule update --recursive
 popd
 ```
@@ -614,7 +620,7 @@ git branch -m main
 git submodule add git@github.com:makefile-inc/github-repos.git makefile-github-repos
 pushd .
 cd makefile-github-repos
-git fetch -a && git checkout v0.9.0
+git fetch -a && git checkout v0.10.0
 git submodule update --recursive --init 
 popd
 echo 'include $(CURDIR)/makefile-github-repos/include.mk.inc' > Makefile
@@ -631,7 +637,7 @@ git checkout -b add-github-repos-module
 git submodule add git@github.com:makefile-inc/github-repos.git makefile-github-repos
 pushd .
 cd makefile-github-repos
-git fetch -a && git checkout v0.9.0
+git fetch -a && git checkout v0.10.0
 git submodule update --recursive --init 
 popd
 echo 'include $(CURDIR)/makefile-github-repos/include.mk.inc' > Makefile
