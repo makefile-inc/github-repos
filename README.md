@@ -37,7 +37,7 @@ Checkout to target version:
 ```bash
 pushd .
 cd makefile-github-repos
-git fetch -a && git checkout v0.8.0
+git fetch -a && git checkout v0.9.0
 git submodule update --recursive --init 
 popd
 ```
@@ -67,7 +67,7 @@ include $(CURDIR)/makefile-github-repos/include.mk.inc
 ```bash
 pushd .
 cd makefile-github-repos
-git fetch -a && git checkout v0.8.0
+git fetch -a && git checkout v0.9.0
 git submodule update --recursive
 popd
 ```
@@ -136,7 +136,7 @@ Archives and checksums file saved in [.mirror](./.mirror) dir in format:
 Archive contains next binaries:
 - `tofu` - [opentofu](https://github.com/opentofu/opentofu) binary with version `v1.12.5`
 - `registry.opentofu.org/integrations/github/6.13.0/PLATFORM/terraform-provider-github` - [github tofu provider](https://github.com/integrations/terraform-provider-github) binary with version `6.13.0`
-- `git-crypt` - static build of [git-crypt](https://github.com/AGWA/git-crypt) with version `0.8.0`
+- `git-crypt` - static build of [git-crypt](https://github.com/AGWA/git-crypt) with version `0.9.0`
 
 During install binaries will unarchive to `$(CURDIR)/.bin` directory.
 
@@ -614,7 +614,7 @@ git branch -m main
 git submodule add git@github.com:makefile-inc/github-repos.git makefile-github-repos
 pushd .
 cd makefile-github-repos
-git fetch -a && git checkout v0.8.0
+git fetch -a && git checkout v0.9.0
 git submodule update --recursive --init 
 popd
 echo 'include $(CURDIR)/makefile-github-repos/include.mk.inc' > Makefile
@@ -631,7 +631,7 @@ git checkout -b add-github-repos-module
 git submodule add git@github.com:makefile-inc/github-repos.git makefile-github-repos
 pushd .
 cd makefile-github-repos
-git fetch -a && git checkout v0.8.0
+git fetch -a && git checkout v0.9.0
 git submodule update --recursive --init 
 popd
 echo 'include $(CURDIR)/makefile-github-repos/include.mk.inc' > Makefile
