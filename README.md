@@ -136,7 +136,7 @@ Archives and checksums file saved in [.mirror](./.mirror) dir in format:
 Archive contains next binaries:
 - `tofu` - [opentofu](https://github.com/opentofu/opentofu) binary with version `v1.12.5`
 - `registry.opentofu.org/integrations/github/6.13.0/PLATFORM/terraform-provider-github` - [github tofu provider](https://github.com/integrations/terraform-provider-github) binary with version `6.13.0`
-- `git-crypt` - static build of [git-crypt](https://github.com/AGWA/git-crypt) with version `0.9.0`
+- `git-crypt` - static build of [git-crypt](https://github.com/AGWA/git-crypt) with version `0.8.0`
 
 During install binaries will unarchive to `$(CURDIR)/.bin` directory.
 
