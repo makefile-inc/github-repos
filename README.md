@@ -37,7 +37,7 @@ Checkout to target version:
 ```bash
 pushd .
 cd makefile-github-repos
-git fetch -a && git checkout v0.11.0
+git fetch -a && git checkout v0.12.0
 git submodule update --recursive --init 
 popd
 ```
@@ -65,7 +65,20 @@ include $(CURDIR)/makefile-github-repos/include.mk.inc
 ## Update as submodule
 
 ```bash
-make common/git/submodule/upgrade SUBMODULE_DIR="makefile-github-repos" CHECKOUT_TO="v0.11.0"
+make common/git/submodule/upgrade SUBMODULE_DIR="makefile-github-repos" CHECKOUT_TO="v0.12.0"
+```
+
+or to latest tag:
+
+```bash
+make common/git/submodule/upgrade/latest SUBMODULE_DIR="makefile-github-repos"
+```
+
+
+or to latest tag with auto find submodule dir:
+
+```bash
+make gh/upgrade/module
 ```
 
 or manually:
@@ -73,7 +86,7 @@ or manually:
 ```bash
 pushd .
 cd makefile-github-repos
-git fetch -a && git checkout v0.11.0
+git fetch -a && git checkout v0.12.0
 git submodule update --recursive
 popd
 ```
@@ -562,6 +575,12 @@ It needs for prevent unnecessary destroy repo!
   Params:
   - `KEY_PATH`=*PATH* - path to save git-crypt key. Should be outside the repo (current dir)
 
+
+- `gh/upgrade/module` - upgrade github-repos submodule in your repo
+
+  Params:
+  - `CHECKOUT_TO`=*GIT_REF_OR_TAG* - if passed checkout to passed ref, otherwise to latest tag
+
 - `gh/repo/upgrade` - upgrade deps and sync organizations template and upgrade `.gitignore` after upgrade `github-repos` module
    
    Params:
@@ -620,7 +639,7 @@ git branch -m main
 git submodule add git@github.com:makefile-inc/github-repos.git makefile-github-repos
 pushd .
 cd makefile-github-repos
-git fetch -a && git checkout v0.11.0
+git fetch -a && git checkout v0.12.0
 git submodule update --recursive --init 
 popd
 echo 'include $(CURDIR)/makefile-github-repos/include.mk.inc' > Makefile
@@ -637,7 +656,7 @@ git checkout -b add-github-repos-module
 git submodule add git@github.com:makefile-inc/github-repos.git makefile-github-repos
 pushd .
 cd makefile-github-repos
-git fetch -a && git checkout v0.11.0
+git fetch -a && git checkout v0.12.0
 git submodule update --recursive --init 
 popd
 echo 'include $(CURDIR)/makefile-github-repos/include.mk.inc' > Makefile
