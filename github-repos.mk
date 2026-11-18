@@ -305,6 +305,11 @@ gh/repo/organizations/sync: gh/check/deps
 	echo_info "Organizations synced with templates!"; \
 	exit 0
 
+gh/upgrade/module: ## Upgrade github-repos submodule in your repo
+	@##~ CHECKOUT_TO=GIT_REF_OR_TAG - if passed checkout to passed ref, otherwise to latest tag
+	@${INCLUDE_MAKEFILE_GIT_MODULE} \
+	update_submodule_to_latest "$(_INC_MK_REPOS_ROOT_DIR)" "makefile-github-repos" "$${CHECKOUT_TO:-}"
+
 gh/repo/upgrade: gh/bins/upgrade gh/bins/check/required gh/repo/gitignore/sync gh/repo/organizations/sync ## Upgrade deps and sync organizations template and upgrade .gitignore github-repos module
 	@##~ GITHUB_REPOS_MODULE_DIR=PATH - path to makefile-inc/github-repos dir inside repo.
 	@##~                                Optional. If not passed try to resolve in order:
@@ -389,4 +394,4 @@ gh/infra/sync: gh/check/deps ## Sync repos with github
 		exit 1; \
 	fi; \
 
-.PHONY: gh/repo/gitignore/sync gh/bins/archive gh/bins/install gh/bins/upgrade gh/bins/check/archive/deps gh/check/deps gh/bins/check/required gh/repo/unlock gh/infra/sync gh/infra/organizations/add gh/repo/new/init gh/repo/organizations/sync
+.PHONY: gh/repo/gitignore/sync gh/bins/archive gh/bins/install gh/bins/upgrade gh/bins/check/archive/deps gh/check/deps gh/bins/check/required gh/repo/unlock gh/infra/sync gh/infra/organizations/add gh/repo/new/init gh/repo/organizations/sync gh/upgrade/module
